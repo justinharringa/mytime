@@ -27,4 +27,6 @@ proguard/
 # Log Files
 *.log
 
+# IntelliJ ignores
 .idea
+*.iml
