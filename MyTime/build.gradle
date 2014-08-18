@@ -21,7 +21,7 @@ android {
     buildToolsVersion "19.1.0"
 
     defaultConfig {
-        minSdkVersion 10
+        minSdkVersion 15
         targetSdkVersion 19
         versionCode 1
         versionName "1.0"
@@ -35,11 +35,6 @@ android {
 }
 
 dependencies {
-    // You must install or update the Support Repository through the SDK manager to use this dependency.
-    // The Support Repository (separate from the corresponding library) can be found in the Extras category.
-//       compile 'com.android.support:appcompat-v7:19.+'
-
-    // You must install or update the Support Repository through the SDK manager to use this dependency.
-    // The Support Repository (separate from the corresponding library) can be found in the Extras category.
-    // compile 'com.android.support:gridlayout-v7:0.0.+'
+    compile 'joda-time:joda-time:2.4'
+    compile 'com.google.guava:guava:17.0'
 }

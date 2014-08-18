@@ -3,5 +3,20 @@
     android:id="@+id/container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.harringa.mytime.MainActivity"
-    tools:ignore="MergeRootFrame" />
+    tools:context="com.harringa.mytime.MainActivity">
+
+
+    <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/checkInButton"
+            android:id="@+id/checkIn"
+            android:layout_gravity="center_horizontal|bottom"/>
+
+    <ListView
+            android:layout_width="wrap_content"
+            android:layout_height="450dp"
+            android:id="@+id/checkInListView"
+            android:layout_gravity="center_horizontal|top"/>
+
+</FrameLayout>

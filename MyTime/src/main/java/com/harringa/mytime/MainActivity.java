@@ -3,24 +3,43 @@ package com.harringa.mytime;
 import android.app.Activity;
 import android.app.Fragment;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ListView;
+import com.harringa.mytime.adapter.CheckInAdapter;
+import com.harringa.mytime.repository.CheckInRepository;
+import org.joda.time.DateTime;
+import org.joda.time.Instant;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements View.OnClickListener {
+
+    private static final String TAG = "MyTimeMainActivity";
+    private CheckInRepository checkInRepository;
+    private ListView checkInList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if (savedInstanceState == null) {
-            getFragmentManager().beginTransaction()
-                    .add(R.id.container, new PlaceholderFragment())
-                    .commit();
-        }
+
+        checkInRepository = CheckInRepository.getInstance(this);
+
+        final Button checkIn = (Button) findViewById(R.id.checkIn);
+        checkIn.setOnClickListener(this);
+
+        checkInList = (ListView) findViewById(R.id.checkInListView);
+
+//        if (savedInstanceState == null) {
+//            getFragmentManager().beginTransaction()
+//                    .add(R.id.container, new PlaceholderFragment())
+//                    .commit();
+//        }
     }
 
 
@@ -42,6 +61,23 @@ public class MainActivity extends Activity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateCheckInList();
+    }
+
+    @Override
+    public void onClick(View v) {
+        Log.d(TAG, "Clicked... ");
+        checkInRepository.saveCheckIn(new DateTime());
+        updateCheckInList();
+    }
+
+    private void updateCheckInList() {
+        checkInList.setAdapter(new CheckInAdapter(this, checkInRepository.getAll()));
     }
 
     /**
