@@ -60,10 +60,11 @@ public class CheckInRepository {
         if (cursor.moveToFirst()) {
 
             do {
-                Integer dateTime = cursor.getInt(cursor
+                long dateTime = cursor.getLong(cursor
                         .getColumnIndex(DatabaseHelper.CHECKIN_DATETIME));
+                Log.d(TAG, "dateTime: " + dateTime);
 
-                instants.add(new Instant(dateTime.longValue()));
+                instants.add(new Instant(dateTime));
 
             } while (cursor.moveToNext());
         }

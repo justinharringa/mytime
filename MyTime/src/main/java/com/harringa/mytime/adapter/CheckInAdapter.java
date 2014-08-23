@@ -7,18 +7,19 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
-import com.google.common.collect.ImmutableList;
 import com.harringa.mytime.R;
 import org.joda.time.DateTimeFieldType;
+import org.joda.time.DateTimeZone;
 import org.joda.time.Instant;
 import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.DateTimeFormatterBuilder;
 import org.joda.time.format.ISODateTimeFormat;
 
 import java.util.List;
+import java.util.TimeZone;
 
-/**
- * Created by justinharringa on 8/18/14.
- */
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class CheckInAdapter extends BaseAdapter {
 
     private static final String TAG = "CheckInAdapter";
@@ -47,21 +48,25 @@ public class CheckInAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         Instant instant = instants.get(position);
-        Log.d(TAG, "getView() - " + instant.getMillis());
+        Log.d(TAG, "getView() adapter - " + instant.getMillis());
+        Log.d(TAG, "getView() year - " + instant.get(DateTimeFieldType.year()));
+        Log.d(TAG, "getView() month - " + instant.get(DateTimeFieldType.monthOfYear()));
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
         View view = inflater.inflate(R.layout.check_in_list, null);
 
-        TextView checkInDate = (TextView) view.findViewById(R.id.checkInDate);
-        checkInDate.setText(instant.toString(ISODateTimeFormat.basicDate()));
+        checkNotNull(view);
 
-        TextView checkInTime = (TextView) view.findViewById(R.id.checkInTime);
-        checkInTime.setText(instant.toString(hourAndMinuteFormat()));
+        DateTimeFormatter dateTimeFormatter = new DateTimeFormatterBuilder()
+                .append(ISODateTimeFormat.date())
+                .appendLiteral(" at ")
+                .append(ISODateTimeFormat.hourMinute())
+                .toFormatter()
+                .withZone(DateTimeZone.forTimeZone(TimeZone.getDefault()));
+
+        TextView checkInDate = (TextView) view.findViewById(R.id.checkInDate);
+        checkInDate.setText(instant.toString(dateTimeFormatter));
 
         return view;
-    }
-
-    private DateTimeFormatter hourAndMinuteFormat() {
-        return ISODateTimeFormat.forFields(ImmutableList.of(DateTimeFieldType.hourOfDay(), DateTimeFieldType.minuteOfHour()), true, false);
     }
 }
