@@ -5,23 +5,22 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
-import com.harringa.mytime.model.DatabaseHelper;
 import org.joda.time.DateTime;
 import org.joda.time.Instant;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CheckInRepository {
+public class CheckInContentProvider {
 
-    private static final String TAG = "CheckInRepository";
+    private static final String TAG = "CheckInContentProvider";
     private DatabaseHelper databaseHelper;
-    private static CheckInRepository instance;
+    private static CheckInContentProvider instance;
 
-    public static CheckInRepository getInstance(Context context) {
+    public static CheckInContentProvider getInstance(Context context) {
         if (instance == null) {
             Log.d(TAG, "New instance created");
-            instance = new CheckInRepository(context);
+            instance = new CheckInContentProvider(context);
         }
         return instance;
     }
@@ -72,7 +71,7 @@ public class CheckInRepository {
         return instants;
     }
 
-    private CheckInRepository(Context context) {
+    private CheckInContentProvider(Context context) {
         databaseHelper = new DatabaseHelper(context);
     }
 

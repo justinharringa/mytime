@@ -5,5 +5,6 @@
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="checkInButton">Check In</string>
+    <string name="defaultCheckInDateText">checkInDate</string>
 
 </resources>

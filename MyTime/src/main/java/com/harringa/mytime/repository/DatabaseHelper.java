@@ -1,4 +1,4 @@
-package com.harringa.mytime.model;
+package com.harringa.mytime.repository;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
