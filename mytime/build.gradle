@@ -45,4 +45,5 @@ android {
 dependencies {
     compile 'joda-time:joda-time:2.4'
     compile 'com.google.guava:guava:18.0'
+    androidTestCompile 'junit:junit:4.12'
 }
