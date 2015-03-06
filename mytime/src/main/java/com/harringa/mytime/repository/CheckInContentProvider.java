@@ -45,7 +45,7 @@ public class CheckInContentProvider {
                 null,
                 null,
                 null,
-                DatabaseHelper.CHECKIN_DATETIME);
+                DatabaseHelper.CHECKIN_DATETIME + " DESC");
 
         List<Instant> instants = getCheckIns(cursor);
 
@@ -55,7 +55,7 @@ public class CheckInContentProvider {
     }
 
     private List<Instant> getCheckIns(Cursor cursor) {
-        List<Instant> instants = new ArrayList<Instant>();
+        List<Instant> instants = new ArrayList<>();
         if (cursor.moveToFirst()) {
 
             do {
