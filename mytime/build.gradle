@@ -24,6 +24,8 @@ android {
 
     signingConfigs {
         release {
+            // defaulting to build.gradle to help out the IntelliJ plugin... without this it gets angry when
+            // trying to build a file
             storeFile file(System.getenv("KEYSTORE") ? System.getenv("KEYSTORE") : 'build.gradle')
             storePassword System.getenv("KEYSTORE_PASSWORD")
             keyAlias System.getenv("KEY_ALIAS")
