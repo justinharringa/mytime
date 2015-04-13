@@ -13,6 +13,7 @@ import com.google.common.collect.Ordering;
 import com.harringa.mytime.R;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Instant;
+import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
 import org.joda.time.format.ISODateTimeFormat;
@@ -59,17 +60,11 @@ public class CheckInAdapter extends BaseAdapter {
 
         checkNotNull(view);
 
-        DateTimeFormatter dateFormatter = new DateTimeFormatterBuilder()
-                .append(ISODateTimeFormat.date())
-                .toFormatter()
-                .withZone(DateTimeZone.forTimeZone(TimeZone.getDefault()));
+        DateTimeFormatter dateFormatter = DateTimeFormat.shortDate();
         TextView checkInDate = (TextView) view.findViewById(R.id.checkInDate);
         checkInDate.setText(sortedInstants.get(0).toString(dateFormatter));
 
-        DateTimeFormatter timeFormatter = new DateTimeFormatterBuilder()
-                .append(ISODateTimeFormat.hourMinute())
-                .toFormatter()
-                .withZone(DateTimeZone.forTimeZone(TimeZone.getDefault()));
+        DateTimeFormatter timeFormatter = DateTimeFormat.shortTime();
 
         TextView checkInTimes = (TextView) view.findViewById(R.id.checkInTimes);
         final StringBuilder stringBuilder = new StringBuilder();
