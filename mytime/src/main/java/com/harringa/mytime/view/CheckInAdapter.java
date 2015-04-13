@@ -9,6 +9,7 @@ import android.widget.BaseAdapter;
 import android.widget.TextView;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.Ordering;
 import com.harringa.mytime.R;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Instant;
@@ -49,7 +50,8 @@ public class CheckInAdapter extends BaseAdapter {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        ImmutableList<Instant> instants = getItem(position);
+        ImmutableList<Instant> sortedInstants = getSortedInstants(getItem(position));
+
         Log.d(TAG, "getView() adapter");
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
@@ -62,7 +64,7 @@ public class CheckInAdapter extends BaseAdapter {
                 .toFormatter()
                 .withZone(DateTimeZone.forTimeZone(TimeZone.getDefault()));
         TextView checkInDate = (TextView) view.findViewById(R.id.checkInDate);
-        checkInDate.setText(instants.get(0).toString(dateFormatter));
+        checkInDate.setText(sortedInstants.get(0).toString(dateFormatter));
 
         DateTimeFormatter timeFormatter = new DateTimeFormatterBuilder()
                 .append(ISODateTimeFormat.hourMinute())
@@ -71,7 +73,7 @@ public class CheckInAdapter extends BaseAdapter {
 
         TextView checkInTimes = (TextView) view.findViewById(R.id.checkInTimes);
         final StringBuilder stringBuilder = new StringBuilder();
-        for (Instant instant : instants) {
+        for (Instant instant : sortedInstants) {
             stringBuilder.append(instant.toString(timeFormatter))
                 .append("  ");
         }
@@ -79,5 +81,9 @@ public class CheckInAdapter extends BaseAdapter {
 
 
         return view;
+    }
+
+    private ImmutableList<Instant> getSortedInstants(final ImmutableList<Instant> unsortedInstants) {
+        return ImmutableList.copyOf(Ordering.natural().immutableSortedCopy(unsortedInstants));
     }
 }
