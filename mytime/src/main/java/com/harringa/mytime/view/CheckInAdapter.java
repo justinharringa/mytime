@@ -1,6 +1,7 @@
 package com.harringa.mytime.view;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,8 +12,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Ordering;
 import com.harringa.mytime.R;
-import org.joda.time.DateTimeZone;
-import org.joda.time.Instant;
+import com.harringa.mytime.math.TimeCalculator;
+import org.joda.time.*;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
@@ -20,6 +21,7 @@ import org.joda.time.format.ISODateTimeFormat;
 
 import java.util.List;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -60,20 +62,38 @@ public class CheckInAdapter extends BaseAdapter {
 
         checkNotNull(view);
 
-        DateTimeFormatter dateFormatter = DateTimeFormat.shortDate();
+        DateTimeFormatter dateFormatter = DateTimeFormat.shortDate()
+                .withZone(DateTimeZone.forTimeZone(TimeZone.getDefault()));
         TextView checkInDate = (TextView) view.findViewById(R.id.checkInDate);
         checkInDate.setText(sortedInstants.get(0).toString(dateFormatter));
 
-        DateTimeFormatter timeFormatter = DateTimeFormat.shortTime();
+        DateTimeFormatter timeFormatter = DateTimeFormat.shortTime()
+                .withZone(DateTimeZone.forTimeZone(TimeZone.getDefault()));
 
         TextView checkInTimes = (TextView) view.findViewById(R.id.checkInTimes);
         final StringBuilder stringBuilder = new StringBuilder();
         for (Instant instant : sortedInstants) {
+            Log.d(TAG, "instant: " + instant);
             stringBuilder.append(instant.toString(timeFormatter))
                 .append("  ");
         }
         checkInTimes.setText(stringBuilder.toString().trim());
 
+        TextView dateTotal = (TextView) view.findViewById(R.id.dateTotal);
+        final long totalTime = TimeCalculator.totalTime(sortedInstants);
+        final long totalHours = TimeUnit.MILLISECONDS.toHours(totalTime);
+        Log.d(TAG, "totalHours: " + totalHours);
+        if (totalHours >= 8) {
+            dateTotal.setTextColor(Color.GREEN);
+        } else {
+            dateTotal.setTextColor(Color.RED);
+        }
+        final String totalString = String.format("%02dh %02dm",
+                totalHours,
+                TimeUnit.MILLISECONDS.toMinutes(totalTime) -
+                        TimeUnit.HOURS.toMinutes(totalHours)
+        );
+        dateTotal.setText(totalString);
 
         return view;
     }

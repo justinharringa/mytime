@@ -1,6 +1,5 @@
 package com.harringa.mytime.math;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -22,6 +21,8 @@ public class TimeCalculatorTest {
 
     private static final Instant FIVE_MINUTES_AGO = NOW.minus(FIVE_MINUTES);
     private static final Instant THREE_MINUTES_AGO = NOW.minus(Minutes.THREE.toStandardDuration());
+    private static final Instant TWO_MINUTES_AGO = NOW.minus(Minutes.TWO.toStandardDuration());
+    private static final Instant ONE_MINUTE_AGO = NOW.minus(Minutes.ONE.toStandardDuration());
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -29,10 +30,18 @@ public class TimeCalculatorTest {
     }
 
     @Test
-    public void whenTwoInstances5And7MinutesAgoThen2Minutes() throws Exception {
+    public void whenTwoInstances5And3MinutesAgoThen2Minutes() throws Exception {
         final List<Instant> instants = Lists.newArrayList(FIVE_MINUTES_AGO, THREE_MINUTES_AGO);
         assertThat(TimeCalculator.totalTime(instants),
                 is(equalTo(Minutes.TWO.toStandardDuration().getMillis())));
+
+    }
+
+    @Test
+    public void when5And3And2And1MinutesAgoThen3Minutes() throws Exception {
+        final List<Instant> instants = Lists.newArrayList(FIVE_MINUTES_AGO, THREE_MINUTES_AGO, TWO_MINUTES_AGO, ONE_MINUTE_AGO);
+        assertThat(TimeCalculator.totalTime(instants),
+                is(equalTo(Minutes.THREE.toStandardDuration().getMillis())));
 
     }
 

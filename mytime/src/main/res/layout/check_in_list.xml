@@ -3,20 +3,37 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="fill_parent"
               android:layout_height="wrap_content"
-              android:orientation="vertical">
+              android:orientation="vertical" android:id="@+id/checkInListView">
 
-    <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Medium Text"
-            android:id="@+id/checkInDate"/>
+    <LinearLayout android:layout_width="fill_parent"
+                  android:layout_height="wrap_content"
+            >
+        <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="@string/checkInDateHeadingText"
+                android:id="@+id/checkInDate"
+                android:layout_weight="1"/>
+
+        <TextView
+                android:gravity="end"
+                android:layout_gravity="end"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="@string/dateTotalHeading"
+                android:id="@+id/dateTotal"
+                android:layout_weight="1"/>
+    </LinearLayout>
+
 
     <TextView
             android:id="@+id/checkInTimes"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginRight="10dp"
-            android:text="@string/defaultCheckInDateText"/>
+            android:layout_marginEnd="10dp"
+            android:text="@string/defaultCheckInTimeText"/>
 
 </LinearLayout>

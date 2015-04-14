@@ -8,7 +8,7 @@ public class TimeCalculator {
 
     public static long totalTime(final List<Instant> instants) {
         long totalTime = 0L;
-        for (int i = 0; i < numberOfPairsIn(instants); i++) {
+        for (int i = 0; (i+1) < instants.size(); i += 2) {
             totalTime += millisBetweenPairOfInstantsStartingAt(instants, i);
         }
         if (hasAnInstantWithoutAPair(instants)) {
