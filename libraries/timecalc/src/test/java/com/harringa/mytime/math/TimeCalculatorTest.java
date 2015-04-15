@@ -32,24 +32,33 @@ public class TimeCalculatorTest {
     @Test
     public void whenTwoInstances5And3MinutesAgoThen2Minutes() throws Exception {
         final List<Instant> instants = Lists.newArrayList(FIVE_MINUTES_AGO, THREE_MINUTES_AGO);
-        assertThat(TimeCalculator.totalTime(instants),
-                is(equalTo(Minutes.TWO.toStandardDuration().getMillis())));
+        assertThat(TimeCalculator.totalTime(instants).getMinutes(),
+                is(equalTo(2)));
 
     }
 
     @Test
     public void when5And3And2And1MinutesAgoThen3Minutes() throws Exception {
         final List<Instant> instants = Lists.newArrayList(FIVE_MINUTES_AGO, THREE_MINUTES_AGO, TWO_MINUTES_AGO, ONE_MINUTE_AGO);
-        assertThat(TimeCalculator.totalTime(instants),
-                is(equalTo(Minutes.THREE.toStandardDuration().getMillis())));
+        assertThat(TimeCalculator.totalTime(instants).getMinutes(),
+                is(3));
 
     }
 
     @Test
     public void whenOnlyOneInstantFrom5MinutesAgoSentThenYield5Minutes() {
         final List<Instant> instants = Lists.newArrayList(FIVE_MINUTES_AGO);
-        assertThat(TimeCalculator.totalTime(instants),
-                is(equalTo(FIVE_MINUTES.getMillis())));
+        assertThat(TimeCalculator.totalTime(instants).getMinutes(),
+                is(equalTo(5)));
+
+    }
+
+    @Test
+    public void testRoundFloorMillisOfReturnsProperMinute() throws Exception {
+        final Instant almost2Minutes = new Instant(0).plus(Minutes.TWO.toStandardDuration()).minus(1);
+        final Instant oneMinuteMillis = new Instant(0).plus(Minutes.ONE.toStandardDuration());
+        assertThat(TimeCalculator.roundFloorOfMinute(almost2Minutes),
+                is(equalTo(oneMinuteMillis)));
 
     }
 }

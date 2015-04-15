@@ -87,7 +87,9 @@ public class MyTimeMainActivity extends Activity implements View.OnClickListener
         TimePicker timePicker = (TimePicker) this.findViewById(R.id.timePicker);
         final DateTime newTime = DateTime.now()
                 .withHourOfDay(timePicker.getCurrentHour())
-                .withMinuteOfHour(timePicker.getCurrentMinute());
+                .withMinuteOfHour(timePicker.getCurrentMinute())
+                .withSecondOfMinute(0)
+                .withMillis(0);
 
         Log.d(TAG, "Saving " + newTime);
         checkInContentProvider.saveCheckIn(newTime);

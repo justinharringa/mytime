@@ -80,8 +80,8 @@ public class CheckInAdapter extends BaseAdapter {
         checkInTimes.setText(stringBuilder.toString().trim());
 
         TextView dateTotal = (TextView) view.findViewById(R.id.dateTotal);
-        final long totalTime = TimeCalculator.totalTime(sortedInstants);
-        final long totalHours = TimeUnit.MILLISECONDS.toHours(totalTime);
+        final Period totalTime = TimeCalculator.totalTime(sortedInstants);
+        final int totalHours = totalTime.getHours();
         Log.d(TAG, "totalHours: " + totalHours);
         if (totalHours >= 8) {
             dateTotal.setTextColor(Color.GREEN);
@@ -90,9 +90,7 @@ public class CheckInAdapter extends BaseAdapter {
         }
         final String totalString = String.format("%02dh %02dm",
                 totalHours,
-                TimeUnit.MILLISECONDS.toMinutes(totalTime) -
-                        TimeUnit.HOURS.toMinutes(totalHours)
-        );
+                totalTime.getMinutes());
         dateTotal.setText(totalString);
 
         return view;
