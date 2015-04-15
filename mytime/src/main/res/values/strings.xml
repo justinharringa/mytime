@@ -8,5 +8,6 @@
     <string name="defaultCheckInTimeText">checkInTimes</string>
     <string name="checkInDateHeadingText">checkInDateHeading</string>
     <string name="dateTotalHeading">dateTotalHeading</string>
+    <string name="missingCheckInText">Missing Check In</string>
 
 </resources>

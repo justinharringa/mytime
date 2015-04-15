@@ -35,6 +35,7 @@ public class CheckInAdapter extends BaseAdapter {
         this.context = context;
         this.instantsGroupedByDate = instantsGroupedByDate;
     }
+
     @Override
     public int getCount() {
         return instantsGroupedByDate.keySet().size();
@@ -75,23 +76,31 @@ public class CheckInAdapter extends BaseAdapter {
         for (Instant instant : sortedInstants) {
             Log.d(TAG, "instant: " + instant);
             stringBuilder.append(instant.toString(timeFormatter))
-                .append("  ");
+                    .append("  ");
         }
         checkInTimes.setText(stringBuilder.toString().trim());
 
         TextView dateTotal = (TextView) view.findViewById(R.id.dateTotal);
-        final Period totalTime = TimeCalculator.totalTime(sortedInstants);
-        final int totalHours = totalTime.getHours();
-        Log.d(TAG, "totalHours: " + totalHours);
-        if (totalHours >= 8) {
-            dateTotal.setTextColor(Color.GREEN);
-        } else {
+        if (sortedInstants.get(0).isBefore(new DateTime().dayOfMonth().roundFloorCopy()) &&
+                TimeCalculator.hasAnInstantWithoutAPair(sortedInstants)) {
             dateTotal.setTextColor(Color.RED);
+            dateTotal.setText(R.string.missingCheckInText);
+
+        } else {
+
+            final Period totalTime = TimeCalculator.totalTime(sortedInstants);
+            final int totalHours = totalTime.getHours();
+            Log.d(TAG, "totalHours: " + totalHours);
+            if (totalHours >= 8) {
+                dateTotal.setTextColor(Color.GREEN);
+            } else {
+                dateTotal.setTextColor(Color.RED);
+            }
+            final String totalString = String.format("%02dh %02dm",
+                    totalHours,
+                    totalTime.getMinutes());
+            dateTotal.setText(totalString);
         }
-        final String totalString = String.format("%02dh %02dm",
-                totalHours,
-                totalTime.getMinutes());
-        dateTotal.setText(totalString);
 
         return view;
     }

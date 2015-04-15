@@ -48,7 +48,7 @@ public class TimeCalculator {
                 .toPeriod(HOURS_MINUTES_PERIOD);
     }
 
-    private static boolean hasAnInstantWithoutAPair(final List<Instant> instants) {
+    public static boolean hasAnInstantWithoutAPair(final List<Instant> instants) {
         return instants.size() % 2 == 1;
     }
 
