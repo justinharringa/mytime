@@ -15,13 +15,17 @@ public class TimeCalculator {
         Period totalPeriod = new Period();
         int index = 0;
         while (anotherPairAvailable(instants, index)) {
-            totalPeriod = totalPeriod.plus(periodBetweenPairOfInstantsStartingAt(instants, index));
+            totalPeriod = addIntervalOfInstantsToTotal(instants, index, totalPeriod);
             index = indexForNextPair(index);
         }
         if (hasAnInstantWithoutAPair(instants)) {
             totalPeriod = totalPeriod.plus(millisBetweenNowAndLastInstant(instants));
         }
-        return totalPeriod;
+        return totalPeriod.normalizedStandard(HOURS_MINUTES_PERIOD);
+    }
+
+    private static Period addIntervalOfInstantsToTotal(final List<Instant> instants, final int index, final Period totalPeriod) {
+        return totalPeriod.plus(periodBetweenPairOfInstantsStartingAt(instants, index));
     }
 
     private static int indexForNextPair(final int index) {
@@ -30,10 +34,6 @@ public class TimeCalculator {
 
     private static boolean anotherPairAvailable(final List<Instant> instants, final int index) {
         return (index + 1) < instants.size();
-    }
-
-    private static int numberOfPairsIn(final List<Instant> instants) {
-        return instants.size() / 2;
     }
 
     private static Period periodBetweenPairOfInstantsStartingAt(final List<Instant> instants, final int index) {
