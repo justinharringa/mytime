@@ -66,7 +66,8 @@ public class CheckInAdapter extends BaseAdapter {
         DateTimeFormatter dateFormatter = DateTimeFormat.shortDate()
                 .withZone(DateTimeZone.forTimeZone(TimeZone.getDefault()));
         TextView checkInDate = (TextView) view.findViewById(R.id.checkInDate);
-        checkInDate.setText(sortedInstants.get(0).toString(dateFormatter));
+        final Instant firstInstantForView = sortedInstants.get(0);
+        checkInDate.setText(firstInstantForView.toString(dateFormatter));
 
         DateTimeFormatter timeFormatter = DateTimeFormat.shortTime()
                 .withZone(DateTimeZone.forTimeZone(TimeZone.getDefault()));
@@ -81,7 +82,8 @@ public class CheckInAdapter extends BaseAdapter {
         checkInTimes.setText(stringBuilder.toString().trim());
 
         TextView dateTotal = (TextView) view.findViewById(R.id.dateTotal);
-        if (sortedInstants.get(0).isBefore(new DateTime().dayOfMonth().roundFloorCopy()) &&
+        if ((firstInstantForView.isBefore(DateTime.now().dayOfMonth().roundFloorCopy()) ||
+                firstInstantForView.isAfter(DateTime.now().dayOfMonth().roundCeilingCopy())) &&
                 TimeCalculator.hasAnInstantWithoutAPair(sortedInstants)) {
             dateTotal.setTextColor(Color.RED);
             dateTotal.setText(R.string.missingCheckInText);
