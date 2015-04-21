@@ -14,8 +14,8 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 22
-        versionCode 6
-        versionName "1.0.5"
+        versionCode 7
+        versionName "1.0.6"
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
@@ -45,5 +45,8 @@ android {
 dependencies {
     compile 'joda-time:joda-time:2.4'
     compile 'com.google.guava:guava:18.0'
+    compile 'com.android.support:support-v4:22.0.0'
+    compile 'com.android.support:appcompat-v7:22.0.0'
+    compile 'com.android.support:recyclerview-v7:22.0.0'
     compile project(':libraries:timecalc')
 }

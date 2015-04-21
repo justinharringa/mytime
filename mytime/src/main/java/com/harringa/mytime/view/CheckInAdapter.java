@@ -94,7 +94,7 @@ public class CheckInAdapter extends BaseAdapter {
             final int totalHours = totalTime.getHours();
             Log.d(TAG, "totalHours: " + totalHours);
             if (totalHours >= 8) {
-                dateTotal.setTextColor(Color.GREEN);
+                dateTotal.setTextColor(context.getResources().getColor(R.color.forest_green));
             } else {
                 dateTotal.setTextColor(Color.RED);
             }
