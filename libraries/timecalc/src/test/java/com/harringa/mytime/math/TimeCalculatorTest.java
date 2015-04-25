@@ -57,6 +57,14 @@ public class TimeCalculatorTest {
     }
 
     @Test
+    public void whenOnlyOneInstantFor5MinutesFromNowThenYield0Minutes() {
+        final List<Instant> instants = Lists.newArrayList(NOW.plus(FIVE_MINUTES));
+        assertThat(TimeCalculator.totalTime(instants).getMinutes(),
+                is(equalTo(0)));
+
+    }
+
+    @Test
     public void testPeriodWith2IntervalsOf59MinutesShouldReturn58Minutes() throws Exception {
         final List<Instant> instants =
                 Lists.newArrayList(FOUR_HOURS_AGO,

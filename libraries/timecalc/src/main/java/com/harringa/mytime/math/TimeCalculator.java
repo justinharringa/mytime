@@ -18,7 +18,7 @@ public class TimeCalculator {
             totalPeriod = addIntervalOfInstantsToTotal(instants, index, totalPeriod);
             index = indexForNextPair(index);
         }
-        if (hasAnInstantWithoutAPair(instants)) {
+        if (hasAnInstantWithoutAPair(instants) & lastInstant(instants).isBeforeNow()) {
             totalPeriod = totalPeriod.plus(millisBetweenNowAndLastInstant(instants));
         }
         return totalPeriod.normalizedStandard(HOURS_MINUTES_PERIOD);
@@ -44,8 +44,12 @@ public class TimeCalculator {
     }
 
     private static Period millisBetweenNowAndLastInstant(final List<Instant> instants) {
-        return new Interval(roundFloorOfMinute(instants.get(instants.size() - 1)), new Instant())
+        return new Interval(roundFloorOfMinute(lastInstant(instants)), new Instant())
                 .toPeriod(HOURS_MINUTES_PERIOD);
+    }
+
+    private static Instant lastInstant(List<Instant> instants) {
+        return instants.get(instants.size() - 1);
     }
 
     public static boolean hasAnInstantWithoutAPair(final List<Instant> instants) {
