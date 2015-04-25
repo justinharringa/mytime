@@ -25,8 +25,9 @@
                 android:layout_height="wrap_content"
                 android:text="@string/checkInButton"
                 android:id="@+id/checkIn"
-                android:layout_gravity="center|right"
-                android:layout_marginRight="15dp"
+                android:layout_gravity="center|end"
+                android:layout_marginRight="@dimen/activity_horizontal_margin"
+                android:layout_marginEnd="@dimen/activity_horizontal_margin"
                 />
 
     </FrameLayout>

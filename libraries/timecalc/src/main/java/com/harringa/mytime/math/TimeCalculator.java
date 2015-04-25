@@ -2,10 +2,7 @@ package com.harringa.mytime.math;
 
 import java.util.List;
 
-import org.joda.time.Instant;
-import org.joda.time.Interval;
-import org.joda.time.Period;
-import org.joda.time.PeriodType;
+import org.joda.time.*;
 
 public class TimeCalculator {
 
@@ -18,10 +15,17 @@ public class TimeCalculator {
             totalPeriod = addIntervalOfInstantsToTotal(instants, index, totalPeriod);
             index = indexForNextPair(index);
         }
-        if (hasAnInstantWithoutAPair(instants) & lastInstant(instants).isBeforeNow()) {
+        final Instant lastInstant = lastInstant(instants);
+        if (hasAnInstantWithoutAPair(instants) &&
+                (lastInstant.isAfter(beginningOfToday()) ||
+                lastInstant.isBeforeNow())) {
             totalPeriod = totalPeriod.plus(millisBetweenNowAndLastInstant(instants));
         }
         return totalPeriod.normalizedStandard(HOURS_MINUTES_PERIOD);
+    }
+
+    private static DateTime beginningOfToday() {
+        return DateTime.now().dayOfMonth().roundCeilingCopy();
     }
 
     private static Period addIntervalOfInstantsToTotal(final List<Instant> instants, final int index, final Period totalPeriod) {
