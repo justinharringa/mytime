@@ -1,0 +1,30 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              tools:context="com.harringa.mytime.EditCheckInsByDateActivity"
+              android:id="@+id/editCheckInsByDate">
+
+    <!--<TextView-->
+            <!--android:layout_width="match_parent"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:textAppearance="?android:attr/textAppearanceLarge"-->
+            <!--android:text="@string/dateHeaderDefault"-->
+            <!--android:layout_marginStart="@dimen/activity_vertical_margin"-->
+            <!--android:layout_marginLeft="@dimen/activity_vertical_margin"-->
+            <!--android:layout_marginEnd="@dimen/activity_vertical_margin"-->
+            <!--android:layout_marginRight="@dimen/activity_vertical_margin"-->
+            <!--android:layout_marginTop="@dimen/activity_horizontal_margin"-->
+            <!--android:layout_marginBottom="@dimen/activity_horizontal_margin"-->
+            <!--android:id="@+id/dateHeader"-->
+            <!--/>-->
+
+    <ListView
+            android:layout_width="match_parent"
+            android:layout_height="0dip"
+            android:layout_weight="1"
+            android:id="@+id/editCheckInList">
+    </ListView>
+
+</LinearLayout>

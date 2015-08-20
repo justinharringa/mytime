@@ -9,5 +9,8 @@
     <string name="checkInDateHeadingText">checkInDateHeading</string>
     <string name="dateTotalHeading">dateTotalHeading</string>
     <string name="missingCheckInText">Missing Check In</string>
+    <string name="dateHeaderDefault">yyyy-MM-dd</string>
+    <string name="defaultHourAndMinute">HH:mm</string>
+    <string name="delete">Delete</string>
 
 </resources>
