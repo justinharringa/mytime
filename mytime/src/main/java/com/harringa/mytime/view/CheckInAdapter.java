@@ -20,6 +20,7 @@ import org.joda.time.format.DateTimeFormatterBuilder;
 import org.joda.time.format.ISODateTimeFormat;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -98,7 +99,8 @@ public class CheckInAdapter extends BaseAdapter {
             } else {
                 dateTotal.setTextColor(Color.RED);
             }
-            final String totalString = String.format("%02dh %02dm",
+            final String totalString = String.format(Locale.ENGLISH,
+                    "%02dh %02dm",
                     totalHours,
                     totalTime.getMinutes());
             dateTotal.setText(totalString);
