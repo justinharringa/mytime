@@ -10,13 +10,13 @@ repositories {
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 33
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 26
-        versionCode 8
-        versionName "1.0.7"
+        targetSdkVersion 33
+        versionCode 9
+        versionName "1.0.8"
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -44,11 +44,11 @@ android {
 }
 
 dependencies {
-    compile 'joda-time:joda-time:2.4'
-    compile 'com.google.guava:guava:21.0'
-    compile 'com.android.support:support-v4:27.0.0'
-    compile 'com.android.support:appcompat-v7:27.0.0'
-    compile 'com.android.support:recyclerview-v7:27.0.0'
-    compile 'com.android.support:design:27.0.0'
-    compile project(':libraries:timecalc')
+    implementation 'joda-time:joda-time:2.4'
+    implementation 'com.google.guava:guava:21.0'
+    implementation 'com.android.support:support-v4:27.0.0'
+    implementation 'com.android.support:appcompat-v7:27.0.0'
+    implementation 'com.android.support:recyclerview-v7:27.0.0'
+    implementation 'com.android.support:design:27.0.0'
+    implementation project(':libraries:timecalc')
 }
