@@ -1,15 +1,11 @@
-task wrapper(type: Wrapper) {
-    gradleVersion = '2.3'
+tasks.register('wrapper', Wrapper) {
+    gradleVersion = '8.4'
 }
 
-repositories {
-    mavenCentral()
-    jcenter()
-    google()
-}
 apply plugin: 'com.android.application'
 
 android {
+    namespace 'com.harringa.mytime'
     compileSdkVersion 33
 
     defaultConfig {
