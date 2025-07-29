@@ -5,9 +5,10 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
-import org.joda.time.DateTime;
-import org.joda.time.Instant;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,19 +26,20 @@ public class CheckInContentProvider {
         return instance;
     }
 
-    public void saveCheckIn(DateTime checkIn) {
+    public void saveCheckIn(LocalDateTime checkIn) {
         Log.d(TAG, "saveCheckIn()");
         ContentValues contentValues = new ContentValues();
-        contentValues.put(DatabaseHelper.CHECKIN_DATETIME, checkIn.getMillis());
-        Log.d(TAG, "millis: " + checkIn.getMillis());
-        Log.d(TAG, "date: " + checkIn.getYear() + "-" + checkIn.getMonthOfYear() + "-" + checkIn.getDayOfMonth());
+        long millis = checkIn.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        contentValues.put(DatabaseHelper.CHECKIN_DATETIME, millis);
+        Log.d(TAG, "millis: " + millis);
+        Log.d(TAG, "date: " + checkIn.getYear() + "-" + checkIn.getMonthValue() + "-" + checkIn.getDayOfMonth());
 
         getConnection().insert(DatabaseHelper.CHECKIN_TABLE, "", contentValues);
         closeConnection();
 
     }
 
-    public List<Instant> getAll() {
+    public List<LocalDateTime> getAll() {
         Log.d(TAG, "getAll()");
         Cursor cursor = getConnection().query(DatabaseHelper.CHECKIN_TABLE,
                 new String[]{DatabaseHelper.CHECKIN_ID, DatabaseHelper.CHECKIN_DATETIME},
@@ -47,15 +49,15 @@ public class CheckInContentProvider {
                 null,
                 DatabaseHelper.CHECKIN_DATETIME + " DESC");
 
-        List<Instant> instants = getCheckIns(cursor);
+        List<LocalDateTime> dateTimes = getCheckIns(cursor);
 
         closeConnection();
 
-        return instants;
+        return dateTimes;
     }
 
-    private List<Instant> getCheckIns(Cursor cursor) {
-        List<Instant> instants = new ArrayList<>();
+    private List<LocalDateTime> getCheckIns(Cursor cursor) {
+        List<LocalDateTime> dateTimes = new ArrayList<>();
         if (cursor.moveToFirst()) {
 
             do {
@@ -63,12 +65,15 @@ public class CheckInContentProvider {
                         .getColumnIndex(DatabaseHelper.CHECKIN_DATETIME));
                 Log.d(TAG, "dateTime: " + dateTime);
 
-                instants.add(new Instant(dateTime));
+                LocalDateTime localDateTime = Instant.ofEpochMilli(dateTime)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDateTime();
+                dateTimes.add(localDateTime);
 
             } while (cursor.moveToNext());
         }
 
-        return instants;
+        return dateTimes;
     }
 
     private CheckInContentProvider(Context context) {
