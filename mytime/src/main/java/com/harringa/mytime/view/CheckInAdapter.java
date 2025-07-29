@@ -111,10 +111,12 @@ public class CheckInAdapter extends BaseAdapter {
             } else {
                 holder.dateTotal.setTextColor(Color.RED);
             }
+            final long totalMinutes = totalTime.toMinutes();
+            final long minutesPart = totalMinutes % 60;
             final String totalString = String.format(Locale.ENGLISH,
                     "%02dh %02dm",
                     totalHours,
-                    totalTime.toMinutesPart());
+                    minutesPart);
             holder.dateTotal.setText(totalString);
         }
 

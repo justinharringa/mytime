@@ -82,7 +82,10 @@ public class TimeCalculatorTest {
                         THREE_HOURS_ONE_MINUTE_AGO,
                         TWO_HOURS_AGO,
                         ONE_HOUR_ONE_MINUTE_AGO);
-        assertThat(TimeCalculator.totalTime(dateTimes).toMinutesPart(), is(equalTo(58)));
+        final Duration totalTime = TimeCalculator.totalTime(dateTimes);
+        final long totalMinutes = totalTime.toMinutes();
+        final long minutesPart = totalMinutes % 60;
+        assertThat(minutesPart, is(equalTo(58L)));
     }
 
     @Test
