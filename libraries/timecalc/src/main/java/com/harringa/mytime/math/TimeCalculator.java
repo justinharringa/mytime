@@ -24,15 +24,14 @@ public class TimeCalculator {
         final LocalDateTime lastDateTime = lastDateTime(dateTimes);
         LocalDateTime now = LocalDateTime.now(clock);
         if (hasAnInstantWithoutAPair(dateTimes) &&
-                (lastDateTime.isAfter(beginningOfToday()) ||
-                lastDateTime.isBefore(now))) {
+                isFromToday(lastDateTime, now)) {
             totalDuration = totalDuration.plus(millisBetweenNowAndLastDateTime(dateTimes));
         }
         return totalDuration;
     }
 
-    private static LocalDateTime beginningOfToday() {
-        return LocalDateTime.now(clock).toLocalDate().atStartOfDay().plusDays(1);
+    private static boolean isFromToday(LocalDateTime dateTime, LocalDateTime now) {
+        return dateTime.toLocalDate().equals(now.toLocalDate());
     }
 
     private static Duration addIntervalOfDateTimesToTotal(final List<LocalDateTime> dateTimes, final int index, final Duration totalDuration) {

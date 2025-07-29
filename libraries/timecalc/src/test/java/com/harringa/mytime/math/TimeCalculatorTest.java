@@ -74,7 +74,6 @@ public class TimeCalculatorTest {
         final List<LocalDateTime> dateTimes = Lists.newArrayList(NOW.minus(Duration.ofDays(2)));
         assertThat(TimeCalculator.totalTime(dateTimes).toMinutes(),
                 is(equalTo(0L)));
-
     }
 
     @Test
@@ -86,7 +85,6 @@ public class TimeCalculatorTest {
                         ONE_HOUR_ONE_MINUTE_AGO);
         assertThat(TimeCalculator.totalTime(dateTimes).toMinutes(),
                 is(equalTo(58L)));
-
     }
 
     @Test
