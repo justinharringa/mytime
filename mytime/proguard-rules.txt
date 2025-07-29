@@ -11,12 +11,28 @@
 -dontwarn javax.annotation.**
 -dontwarn javax.inject.**
 -dontwarn sun.misc.Unsafe
--dontwarn org.joda.convert.**
 -dontwarn afu.org.checkerframework.**
 -dontwarn org.checkerframework.**
 -dontwarn com.google.errorprone.**
 -dontwarn sun.misc.Unsafe
 -dontwarn java.lang.ClassValue
+
+# More aggressive optimization to reduce method count
+-optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
+-optimizationpasses 5
+-allowaccessmodification
+
+# Remove unused methods and classes
+-assumenosideeffects class java.io.PrintStream {
+    void println(java.lang.String);
+    void println(java.lang.Object);
+}
+
+# Keep only what we need from Guava
+-keep class com.google.common.collect.** { *; }
+-dontwarn com.google.common.collect.**
+-keep class com.google.common.base.** { *; }
+-dontwarn com.google.common.base.**
 
 -keep class * extends java.util.ListResourceBundle {
     protected Object[][] getContents();

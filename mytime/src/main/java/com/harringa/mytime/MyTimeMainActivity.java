@@ -1,7 +1,7 @@
 package com.harringa.mytime;
 
 import android.app.Activity;
-import android.app.Fragment;
+import androidx.fragment.app.Fragment;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -11,21 +11,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.TimePicker;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Multimaps;
 import com.harringa.mytime.repository.CheckInContentProvider;
 import com.harringa.mytime.view.CheckInAdapter;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.Instant;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.DateTimeFormatterBuilder;
-import org.joda.time.format.ISODateTimeFormat;
 
-import java.util.TimeZone;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class MyTimeMainActivity extends Activity implements View.OnClickListener {
 
@@ -45,10 +39,6 @@ public class MyTimeMainActivity extends Activity implements View.OnClickListener
         checkIn.setOnClickListener(this);
 
         checkInList = (ListView) findViewById(R.id.checkInListView);
-        ViewHolder viewHolder = new ViewHolder();
-        viewHolder.checkInList = (ListView) findViewById(R.layout.check_in_list);
-        viewHolder.checkInDate = (TextView) findViewById(R.id.checkInDate);
-        checkInList.setTag(viewHolder);
     }
 
 
@@ -74,19 +64,33 @@ public class MyTimeMainActivity extends Activity implements View.OnClickListener
         super.onResume();
         updateCheckInList();
         TimePicker timePicker = (TimePicker) this.findViewById(R.id.timePicker);
-        timePicker.setCurrentHour(DateTime.now().getHourOfDay());
-        timePicker.setCurrentMinute(DateTime.now().getMinuteOfHour());
+        LocalDateTime now = LocalDateTime.now();
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            timePicker.setHour(now.getHour());
+            timePicker.setMinute(now.getMinute());
+        } else {
+            timePicker.setCurrentHour(now.getHour());
+            timePicker.setCurrentMinute(now.getMinute());
+        }
     }
 
     @Override
     public void onClick(View v) {
         Log.d(TAG, "Clicked... ");
         TimePicker timePicker = (TimePicker) this.findViewById(R.id.timePicker);
-        final DateTime newTime = DateTime.now()
-                .withHourOfDay(timePicker.getCurrentHour())
-                .withMinuteOfHour(timePicker.getCurrentMinute())
-                .withSecondOfMinute(0)
-                .withMillisOfSecond(0);
+        int hour, minute;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            hour = timePicker.getHour();
+            minute = timePicker.getMinute();
+        } else {
+            hour = timePicker.getCurrentHour();
+            minute = timePicker.getCurrentMinute();
+        }
+        final LocalDateTime newTime = LocalDateTime.now()
+                .withHour(hour)
+                .withMinute(minute)
+                .withSecond(0)
+                .withNano(0);
 
         Log.d(TAG, "Saving " + newTime);
         checkInContentProvider.saveCheckIn(newTime);
@@ -94,15 +98,12 @@ public class MyTimeMainActivity extends Activity implements View.OnClickListener
     }
 
     private void updateCheckInList() {
-        final ImmutableListMultimap<Integer, Instant> instantsGroupedByDate =
-                Multimaps.index(checkInContentProvider.getAll(), new Function<Instant, Integer>() {
+        final ImmutableListMultimap<Integer, LocalDateTime> instantsGroupedByDate =
+                Multimaps.index(checkInContentProvider.getAll(), new Function<LocalDateTime, Integer>() {
                     @Override
-                    public Integer apply(Instant input) {
-                        DateTimeFormatter dateFormatter = new DateTimeFormatterBuilder()
-                                .append(ISODateTimeFormat.basicDate())
-                                .toFormatter()
-                                .withZone(DateTimeZone.forTimeZone(TimeZone.getDefault()));
-                        return Integer.valueOf(input.toString(dateFormatter));
+                    public Integer apply(LocalDateTime input) {
+                        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                        return Integer.valueOf(input.format(dateFormatter));
                     }
                 });
         checkInList.setAdapter(new CheckInAdapter(this, instantsGroupedByDate));

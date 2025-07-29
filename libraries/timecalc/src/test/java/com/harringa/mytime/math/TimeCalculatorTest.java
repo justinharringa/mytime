@@ -1,9 +1,13 @@
 package com.harringa.mytime.math;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import org.joda.time.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -13,93 +17,91 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class TimeCalculatorTest {
 
-    private static final Instant NOW = Instant.now();
-    public static final ReadableDuration FIVE_MINUTES = Minutes.minutes(5).toStandardDuration();
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2024-01-15T12:00:00Z"), ZoneId.systemDefault());
+    private static final LocalDateTime NOW = LocalDateTime.now(FIXED_CLOCK);
+    public static final Duration FIVE_MINUTES = Duration.ofMinutes(5);
 
-    private static final Instant FIVE_MINUTES_AGO = NOW.minus(FIVE_MINUTES);
-    private static final Instant THREE_MINUTES_AGO = NOW.minus(Minutes.THREE.toStandardDuration());
-    private static final Instant TWO_MINUTES_AGO = NOW.minus(Minutes.TWO.toStandardDuration());
-    private static final Instant ONE_MINUTE_AGO = NOW.minus(Minutes.ONE.toStandardDuration());
-    public static final Instant FOUR_HOURS_AGO = NOW.minus(Hours.hours(4).toStandardDuration());
-    public static final Instant THREE_HOURS_ONE_MINUTE_AGO = NOW.minus(Hours.hours(3).toStandardDuration())
-            .minus(Minutes.ONE.toStandardDuration());
-    public static final Instant TWO_HOURS_AGO = NOW.minus(Hours.hours(2).toStandardDuration());
-    public static final Instant ONE_HOUR_ONE_MINUTE_AGO = NOW.minus(Hours.hours(1).toStandardDuration())
-            .minus(Minutes.ONE.toStandardDuration());
+    private static final LocalDateTime FIVE_MINUTES_AGO = NOW.minus(FIVE_MINUTES);
+    private static final LocalDateTime THREE_MINUTES_AGO = NOW.minus(Duration.ofMinutes(3));
+    private static final LocalDateTime TWO_MINUTES_AGO = NOW.minus(Duration.ofMinutes(2));
+    private static final LocalDateTime ONE_MINUTE_AGO = NOW.minus(Duration.ofMinutes(1));
+    public static final LocalDateTime FOUR_HOURS_AGO = NOW.minus(Duration.ofHours(4));
+    public static final LocalDateTime THREE_HOURS_ONE_MINUTE_AGO = NOW.minus(Duration.ofHours(3))
+            .minus(Duration.ofMinutes(1));
+    public static final LocalDateTime TWO_HOURS_AGO = NOW.minus(Duration.ofHours(2));
+    public static final LocalDateTime ONE_HOUR_ONE_MINUTE_AGO = NOW.minus(Duration.ofHours(1))
+            .minus(Duration.ofMinutes(1));
 
     @BeforeClass
     public static void setUp() throws Exception {
-        DateTimeUtils.setCurrentMillisFixed(NOW.getMillis());
+        TimeCalculator.setClock(FIXED_CLOCK);
     }
 
     @Test
     public void whenTwoInstances5And3MinutesAgoThen2Minutes() throws Exception {
-        final List<Instant> instants = Lists.newArrayList(FIVE_MINUTES_AGO, THREE_MINUTES_AGO);
-        assertThat(TimeCalculator.totalTime(instants).getMinutes(),
-                is(equalTo(2)));
+        final List<LocalDateTime> dateTimes = Lists.newArrayList(FIVE_MINUTES_AGO, THREE_MINUTES_AGO);
+        assertThat(TimeCalculator.totalTime(dateTimes).toMinutes(),
+                is(equalTo(2L)));
 
     }
 
     @Test
     public void when5And3And2And1MinutesAgoThen3Minutes() throws Exception {
-        final List<Instant> instants = Lists.newArrayList(FIVE_MINUTES_AGO, THREE_MINUTES_AGO, TWO_MINUTES_AGO, ONE_MINUTE_AGO);
-        assertThat(TimeCalculator.totalTime(instants).getMinutes(),
-                is(3));
+        final List<LocalDateTime> dateTimes = Lists.newArrayList(FIVE_MINUTES_AGO, THREE_MINUTES_AGO, TWO_MINUTES_AGO, ONE_MINUTE_AGO);
+        assertThat(TimeCalculator.totalTime(dateTimes).toMinutes(),
+                is(3L));
 
     }
 
     @Test
     public void whenOnlyOneInstantFrom5MinutesAgoSentThenYield5Minutes() {
-        final List<Instant> instants = Lists.newArrayList(FIVE_MINUTES_AGO);
-        assertThat(TimeCalculator.totalTime(instants).getMinutes(),
-                is(equalTo(5)));
+        final List<LocalDateTime> dateTimes = Lists.newArrayList(FIVE_MINUTES_AGO);
+        assertThat(TimeCalculator.totalTime(dateTimes).toMinutes(),
+                is(equalTo(5L)));
 
     }
 
     @Test
     public void whenOnlyOneInstantFor5MinutesFromNowThenYield0Minutes() {
-        final List<Instant> instants = Lists.newArrayList(NOW.plus(FIVE_MINUTES));
-        assertThat(TimeCalculator.totalTime(instants).getMinutes(),
-                is(equalTo(0)));
-
+        final List<LocalDateTime> dateTimes = Lists.newArrayList(NOW.plus(FIVE_MINUTES));
+        assertThat(TimeCalculator.totalTime(dateTimes).toMinutes(),
+                is(equalTo(0L)));
     }
 
     @Test
     public void whenOnlyOneInstantFrom2DaysAgoThenYield0Minutes() {
-        final List<Instant> instants = Lists.newArrayList(NOW.minus(Days.TWO.toStandardDuration()));
-        assertThat(TimeCalculator.totalTime(instants).getMinutes(),
-                is(equalTo(0)));
-
+        final List<LocalDateTime> dateTimes = Lists.newArrayList(NOW.minus(Duration.ofDays(2)));
+        assertThat(TimeCalculator.totalTime(dateTimes).toMinutes(),
+                is(equalTo(0L)));
     }
 
     @Test
     public void testPeriodWith2IntervalsOf59MinutesShouldReturn58Minutes() throws Exception {
-        final List<Instant> instants =
+        final List<LocalDateTime> dateTimes =
                 Lists.newArrayList(FOUR_HOURS_AGO,
                         THREE_HOURS_ONE_MINUTE_AGO,
                         TWO_HOURS_AGO,
                         ONE_HOUR_ONE_MINUTE_AGO);
-        assertThat(TimeCalculator.totalTime(instants).getMinutes(),
-                is(equalTo(Minutes.minutes(58).getMinutes())));
-
+        final Duration totalTime = TimeCalculator.totalTime(dateTimes);
+        final long totalMinutes = totalTime.toMinutes();
+        final long minutesPart = totalMinutes % 60;
+        assertThat(minutesPart, is(equalTo(58L)));
     }
 
     @Test
     public void testPeriodWith2IntervalsOf59MinutesShouldReturn1Hour() throws Exception {
-        final List<Instant> instants =
+        final List<LocalDateTime> dateTimes =
                 Lists.newArrayList(FOUR_HOURS_AGO,
                         THREE_HOURS_ONE_MINUTE_AGO,
                         TWO_HOURS_AGO,
                         ONE_HOUR_ONE_MINUTE_AGO);
-        assertThat(TimeCalculator.totalTime(instants).getHours(),
-                is(equalTo(Hours.ONE.getHours())));
-
+        assertThat(TimeCalculator.totalTime(dateTimes).toHours(), is(equalTo(1L)));
     }
 
     @Test
     public void testRoundFloorMillisOfReturnsProperMinute() throws Exception {
-        final Instant almost2Minutes = new Instant(0).plus(Minutes.TWO.toStandardDuration()).minus(1);
-        final Instant oneMinuteMillis = new Instant(0).plus(Minutes.ONE.toStandardDuration());
+        final LocalDateTime almost2Minutes = LocalDateTime.of(2020, 1, 1, 0, 1, 59, 999999999);
+        final LocalDateTime oneMinuteMillis = LocalDateTime.of(2020, 1, 1, 0, 1, 0, 0);
         assertThat(TimeCalculator.roundFloorOfMinute(almost2Minutes),
                 is(equalTo(oneMinuteMillis)));
 

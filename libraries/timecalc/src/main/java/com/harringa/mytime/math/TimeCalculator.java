@@ -1,67 +1,75 @@
 package com.harringa.mytime.math;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
-
-import org.joda.time.*;
 
 public class TimeCalculator {
 
-    public static final PeriodType HOURS_MINUTES_PERIOD = PeriodType.time().withSecondsRemoved().withMillisRemoved();
+    private static Clock clock = Clock.systemDefaultZone();
 
-    public static Period totalTime(final List<Instant> instants) {
-        Period totalPeriod = new Period();
+    public static void setClock(Clock clock) {
+        TimeCalculator.clock = clock;
+    }
+
+    public static Duration totalTime(final List<LocalDateTime> dateTimes) {
+        Duration totalDuration = Duration.ZERO;
         int index = 0;
-        while (anotherPairAvailable(instants, index)) {
-            totalPeriod = addIntervalOfInstantsToTotal(instants, index, totalPeriod);
+        while (anotherPairAvailable(dateTimes, index)) {
+            totalDuration = addIntervalOfDateTimesToTotal(dateTimes, index, totalDuration);
             index = indexForNextPair(index);
         }
-        final Instant lastInstant = lastInstant(instants);
-        if (hasAnInstantWithoutAPair(instants) &&
-                (lastInstant.isAfter(beginningOfToday()) ||
-                lastInstant.isBeforeNow())) {
-            totalPeriod = totalPeriod.plus(millisBetweenNowAndLastInstant(instants));
+        final LocalDateTime lastDateTime = lastDateTime(dateTimes);
+        LocalDateTime now = LocalDateTime.now(clock);
+        if (hasAnInstantWithoutAPair(dateTimes) &&
+                isFromToday(lastDateTime, now) &&
+                lastDateTime.isBefore(now)) {
+            totalDuration = totalDuration.plus(millisBetweenNowAndLastDateTime(dateTimes));
         }
-        return totalPeriod.normalizedStandard(HOURS_MINUTES_PERIOD);
+        return totalDuration;
     }
 
-    private static DateTime beginningOfToday() {
-        return DateTime.now().dayOfMonth().roundCeilingCopy();
+    private static boolean isFromToday(LocalDateTime dateTime, LocalDateTime now) {
+        return dateTime.toLocalDate().equals(now.toLocalDate());
     }
 
-    private static Period addIntervalOfInstantsToTotal(final List<Instant> instants, final int index, final Period totalPeriod) {
-        return totalPeriod.plus(periodBetweenPairOfInstantsStartingAt(instants, index));
+    private static Duration addIntervalOfDateTimesToTotal(final List<LocalDateTime> dateTimes, final int index, final Duration totalDuration) {
+        return totalDuration.plus(durationBetweenPairOfDateTimesStartingAt(dateTimes, index));
     }
 
     private static int indexForNextPair(final int index) {
         return index + 2;
     }
 
-    private static boolean anotherPairAvailable(final List<Instant> instants, final int index) {
-        return (index + 1) < instants.size();
+    private static boolean anotherPairAvailable(final List<LocalDateTime> dateTimes, final int index) {
+        return (index + 1) < dateTimes.size();
     }
 
-    private static Period periodBetweenPairOfInstantsStartingAt(final List<Instant> instants, final int index) {
-        // Take a look at using the Interval class...
-
-        return new Interval(roundFloorOfMinute(instants.get(index)),
-                roundFloorOfMinute(instants.get(index + 1))).toPeriod(HOURS_MINUTES_PERIOD);
+    private static Duration durationBetweenPairOfDateTimesStartingAt(final List<LocalDateTime> dateTimes, final int index) {
+        LocalDateTime start = roundFloorOfMinute(dateTimes.get(index));
+        LocalDateTime end = roundFloorOfMinute(dateTimes.get(index + 1));
+        return Duration.between(start, end);
     }
 
-    private static Period millisBetweenNowAndLastInstant(final List<Instant> instants) {
-        return new Interval(roundFloorOfMinute(lastInstant(instants)), new Instant())
-                .toPeriod(HOURS_MINUTES_PERIOD);
+    private static Duration millisBetweenNowAndLastDateTime(final List<LocalDateTime> dateTimes) {
+        return Duration.between(
+            roundFloorOfMinute(lastDateTime(dateTimes)), 
+            LocalDateTime.now(clock)
+        );
     }
 
-    private static Instant lastInstant(List<Instant> instants) {
-        return instants.get(instants.size() - 1);
+    private static LocalDateTime lastDateTime(List<LocalDateTime> dateTimes) {
+        return dateTimes.get(dateTimes.size() - 1);
     }
 
-    public static boolean hasAnInstantWithoutAPair(final List<Instant> instants) {
-        return instants.size() % 2 == 1;
+    public static boolean hasAnInstantWithoutAPair(final List<LocalDateTime> dateTimes) {
+        return dateTimes.size() % 2 == 1;
     }
 
-    public static Instant roundFloorOfMinute(final Instant instant) {
-        return instant.toDateTime().minuteOfDay().roundFloorCopy().toInstant();
+    public static LocalDateTime roundFloorOfMinute(final LocalDateTime dateTime) {
+        return dateTime.truncatedTo(ChronoUnit.MINUTES);
     }
 
 }
