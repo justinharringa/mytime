@@ -24,7 +24,8 @@ public class TimeCalculator {
         final LocalDateTime lastDateTime = lastDateTime(dateTimes);
         LocalDateTime now = LocalDateTime.now(clock);
         if (hasAnInstantWithoutAPair(dateTimes) &&
-                isFromToday(lastDateTime, now)) {
+                isFromToday(lastDateTime, now) &&
+                lastDateTime.isBefore(now)) {
             totalDuration = totalDuration.plus(millisBetweenNowAndLastDateTime(dateTimes));
         }
         return totalDuration;

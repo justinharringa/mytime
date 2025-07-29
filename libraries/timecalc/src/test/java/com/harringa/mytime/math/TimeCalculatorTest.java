@@ -66,7 +66,6 @@ public class TimeCalculatorTest {
         final List<LocalDateTime> dateTimes = Lists.newArrayList(NOW.plus(FIVE_MINUTES));
         assertThat(TimeCalculator.totalTime(dateTimes).toMinutes(),
                 is(equalTo(0L)));
-
     }
 
     @Test
