@@ -1,0 +1,74 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags like v1.1.0
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        cache: 'gradle'
+        
+    - name: Set up Android SDK
+      uses: android-actions/setup-android@v3
+        
+    - name: Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: Decode upload keystore
+      run: |
+        echo ${{ secrets.UPLOAD_KEYSTORE }} | base64 -d > upload-keystore.jks
+      env:
+        UPLOAD_KEYSTORE: ${{ secrets.UPLOAD_KEYSTORE }}
+        
+    - name: Build signed release APK
+      run: |
+        ./gradlew assembleRelease
+      env:
+        UPLOAD_KEYSTORE: upload-keystore.jks
+        UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+        UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          mytime/build/outputs/apk/release/mytime-release.apk
+        body: |
+          ## Release ${{ github.ref_name }}
+          
+          ### What's New
+          - Updated to target SDK 34 for Google Play compliance
+          - Migrated to Java 8 Time API for better performance
+          - Implemented ViewHolder pattern for improved scrolling
+          - Enhanced error handling and code quality
+          
+          ### Installation
+          Download the APK and install on Android 8.0+ devices.
+          
+          ### Build Info
+          - Target SDK: 34
+          - Min SDK: 26 (Android 8.0+)
+          - Java Version: 17
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
