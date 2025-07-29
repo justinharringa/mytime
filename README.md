@@ -123,7 +123,8 @@ This app is compliant with:
 - ✅ **Google Play target SDK requirements** (API 34)
 - ✅ **Modern Android development practices** (AndroidX)
 - ✅ **Java 17 LTS** for optimal performance
-- ✅ **Backward compatibility** (minSdk 16)
+- ✅ **Java 8 Time API** support (minSdk 26)
+- ✅ **Backward compatibility** (minSdk 26 - Android 8.0+)
 
 ## Contributing
 
