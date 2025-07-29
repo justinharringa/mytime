@@ -100,9 +100,20 @@ mytime/
 ## Dependencies
 
 - **AndroidX**: Modern Android support libraries
-- **Material Design**: Google's Material Design components
-- **Joda Time**: Date/time manipulation library
-- **Guava**: Google's core Java libraries
+- **Guava**: Google's core Java libraries (immutable collections)
+- **Java 8 Time API**: Built-in date/time manipulation (replaced Joda Time)
+
+## Technical Decisions
+
+### Current Architecture
+- **ListView with BaseAdapter**: Using the traditional ListView pattern for simplicity
+- **Basic Android Widgets**: Using TextView, Button, TimePicker for minimal method count
+- **Multidex**: Enabled to handle 64K method limit while maintaining Guava's immutable properties
+
+### Future Improvements
+- **RecyclerView Migration**: Consider migrating from ListView to RecyclerView for better performance
+- **Material Design**: Upgrade to Material Design components for modern UI/UX
+- **Note**: These upgrades would add ~9,000 methods but are supported by multidex
 
 ## Compliance
 
