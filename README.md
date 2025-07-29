@@ -106,9 +106,10 @@ mytime/
 ## Technical Decisions
 
 ### Current Architecture
-- **ListView with BaseAdapter**: Using the traditional ListView pattern for simplicity
+- **ListView with BaseAdapter**: Using the traditional ListView pattern with proper ViewHolder pattern for performance
 - **Basic Android Widgets**: Using TextView, Button, TimePicker for minimal method count
 - **Multidex**: Enabled to handle 64K method limit while maintaining Guava's immutable properties
+- **View Recycling**: Implemented ViewHolder pattern in CheckInAdapter for efficient scrolling
 
 ### Future Improvements
 - **RecyclerView Migration**: Consider migrating from ListView to RecyclerView for better performance

@@ -15,12 +15,8 @@ import com.harringa.mytime.R;
 import com.harringa.mytime.math.TimeCalculator;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Locale;
-import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -29,6 +25,13 @@ public class CheckInAdapter extends BaseAdapter {
     private static final String TAG = "CheckInAdapter";
     private final Context context;
     private final ImmutableListMultimap<Integer, LocalDateTime> dateTimesGroupedByDate;
+
+    // Static ViewHolder class for view recycling
+    private static class ViewHolder {
+        TextView checkInDate;
+        TextView checkInTimes;
+        TextView dateTotal;
+    }
 
     public CheckInAdapter(Context context, ImmutableListMultimap<Integer, LocalDateTime> dateTimesGroupedByDate) {
         this.context = context;
@@ -53,32 +56,43 @@ public class CheckInAdapter extends BaseAdapter {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
+        ViewHolder holder;
+
+        if (convertView == null) {
+            // Inflate new view and create ViewHolder
+            LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            convertView = inflater.inflate(R.layout.check_in_list, parent, false);
+
+            holder = new ViewHolder();
+            holder.checkInDate = (TextView) convertView.findViewById(R.id.checkInDate);
+            holder.checkInTimes = (TextView) convertView.findViewById(R.id.checkInTimes);
+            holder.dateTotal = (TextView) convertView.findViewById(R.id.dateTotal);
+
+            convertView.setTag(holder);
+        } else {
+            // Reuse existing view and ViewHolder
+            holder = (ViewHolder) convertView.getTag();
+        }
+
+        // Get data for this position
         ImmutableList<LocalDateTime> sortedDateTimes = getSortedDateTimes(getItem(position));
-
-        Log.d(TAG, "getView() adapter");
-        LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-
-        View view = inflater.inflate(R.layout.check_in_list, null);
-
-        checkNotNull(view);
-
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MM/dd/yy");
-        TextView checkInDate = (TextView) view.findViewById(R.id.checkInDate);
         final LocalDateTime firstDateTimeForView = sortedDateTimes.get(0);
-        checkInDate.setText(firstDateTimeForView.format(dateFormatter));
 
+        // Update date
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MM/dd/yy");
+        holder.checkInDate.setText(firstDateTimeForView.format(dateFormatter));
+
+        // Update times
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
-
-        TextView checkInTimes = (TextView) view.findViewById(R.id.checkInTimes);
         final StringBuilder stringBuilder = new StringBuilder();
         for (LocalDateTime dateTime : sortedDateTimes) {
             Log.d(TAG, "dateTime: " + dateTime);
             stringBuilder.append(dateTime.format(timeFormatter))
                     .append("  ");
         }
-        checkInTimes.setText(stringBuilder.toString().trim());
+        holder.checkInTimes.setText(stringBuilder.toString().trim());
 
-        TextView dateTotal = (TextView) view.findViewById(R.id.dateTotal);
+        // Update total time
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
         LocalDateTime endOfDay = startOfDay.plusDays(1);
@@ -86,27 +100,25 @@ public class CheckInAdapter extends BaseAdapter {
         if ((firstDateTimeForView.isBefore(startOfDay) ||
                 firstDateTimeForView.isAfter(endOfDay)) &&
                 TimeCalculator.hasAnInstantWithoutAPair(sortedDateTimes)) {
-            dateTotal.setTextColor(Color.RED);
-            dateTotal.setText(R.string.missingCheckInText);
-
+            holder.dateTotal.setTextColor(Color.RED);
+            holder.dateTotal.setText(R.string.missingCheckInText);
         } else {
-
             final java.time.Duration totalTime = TimeCalculator.totalTime(sortedDateTimes);
             final long totalHours = totalTime.toHours();
             Log.d(TAG, "totalHours: " + totalHours);
             if (totalHours >= 8) {
-                dateTotal.setTextColor(context.getResources().getColor(R.color.forest_green));
+                holder.dateTotal.setTextColor(context.getResources().getColor(R.color.forest_green));
             } else {
-                dateTotal.setTextColor(Color.RED);
+                holder.dateTotal.setTextColor(Color.RED);
             }
             final String totalString = String.format(Locale.ENGLISH,
                     "%02dh %02dm",
                     totalHours,
                     totalTime.toMinutesPart());
-            dateTotal.setText(totalString);
+            holder.dateTotal.setText(totalString);
         }
 
-        return view;
+        return convertView;
     }
 
     private ImmutableList<LocalDateTime> getSortedDateTimes(final ImmutableList<LocalDateTime> unsortedDateTimes) {

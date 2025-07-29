@@ -11,7 +11,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.TimePicker;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableListMultimap;
@@ -20,10 +19,7 @@ import com.harringa.mytime.repository.CheckInContentProvider;
 import com.harringa.mytime.view.CheckInAdapter;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.TimeZone;
 
 public class MyTimeMainActivity extends Activity implements View.OnClickListener {
 
@@ -43,10 +39,6 @@ public class MyTimeMainActivity extends Activity implements View.OnClickListener
         checkIn.setOnClickListener(this);
 
         checkInList = (ListView) findViewById(R.id.checkInListView);
-        ViewHolder viewHolder = new ViewHolder();
-        viewHolder.checkInList = (ListView) findViewById(R.layout.check_in_list);
-        viewHolder.checkInDate = (TextView) findViewById(R.id.checkInDate);
-        checkInList.setTag(viewHolder);
     }
 
 
