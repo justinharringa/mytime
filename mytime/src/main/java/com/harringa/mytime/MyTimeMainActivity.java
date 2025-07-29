@@ -1,7 +1,7 @@
 package com.harringa.mytime;
 
 import android.app.Activity;
-import android.app.Fragment;
+import androidx.fragment.app.Fragment;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -74,17 +74,31 @@ public class MyTimeMainActivity extends Activity implements View.OnClickListener
         super.onResume();
         updateCheckInList();
         TimePicker timePicker = (TimePicker) this.findViewById(R.id.timePicker);
-        timePicker.setCurrentHour(DateTime.now().getHourOfDay());
-        timePicker.setCurrentMinute(DateTime.now().getMinuteOfHour());
+        DateTime now = DateTime.now();
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            timePicker.setHour(now.getHourOfDay());
+            timePicker.setMinute(now.getMinuteOfHour());
+        } else {
+            timePicker.setCurrentHour(now.getHourOfDay());
+            timePicker.setCurrentMinute(now.getMinuteOfHour());
+        }
     }
 
     @Override
     public void onClick(View v) {
         Log.d(TAG, "Clicked... ");
         TimePicker timePicker = (TimePicker) this.findViewById(R.id.timePicker);
+        int hour, minute;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            hour = timePicker.getHour();
+            minute = timePicker.getMinute();
+        } else {
+            hour = timePicker.getCurrentHour();
+            minute = timePicker.getCurrentMinute();
+        }
         final DateTime newTime = DateTime.now()
-                .withHourOfDay(timePicker.getCurrentHour())
-                .withMinuteOfHour(timePicker.getCurrentMinute())
+                .withHourOfDay(hour)
+                .withMinuteOfHour(minute)
                 .withSecondOfMinute(0)
                 .withMillisOfSecond(0);
 
