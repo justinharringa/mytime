@@ -36,7 +36,7 @@ jobs:
           ${{ runner.os }}-gradle-
           
     - name: Build with Gradle
-      run: ./gradlew build
+      run: ./gradlew build -x assembleRelease
       
     - name: Run tests
       run: ./gradlew test
@@ -76,7 +76,7 @@ jobs:
       uses: android-actions/setup-android@v3
         
     - name: Test compatibility with API ${{ matrix.api-level }}
-      run: ./gradlew assembleDebug
+      run: ./gradlew assembleDebug -x assembleRelease
       
   code-quality:
     runs-on: ubuntu-latest

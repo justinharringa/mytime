@@ -41,6 +41,11 @@ jobs:
         
     - name: Build signed release APK
       run: |
+        echo "Checking environment variables..."
+        echo "UPLOAD_KEYSTORE exists: $([ -n "$UPLOAD_KEYSTORE" ] && echo "YES" || echo "NO")"
+        echo "UPLOAD_KEY_ALIAS exists: $([ -n "$UPLOAD_KEY_ALIAS" ] && echo "YES" || echo "NO")"
+        echo "UPLOAD_KEY_PASSWORD exists: $([ -n "$UPLOAD_KEY_PASSWORD" ] && echo "YES" || echo "NO")"
+        echo "Keystore file exists: $([ -f "upload-keystore.jks" ] && echo "YES" || echo "NO")"
         ./gradlew assembleRelease
       env:
         UPLOAD_KEYSTORE: upload-keystore.jks
