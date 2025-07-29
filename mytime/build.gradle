@@ -40,6 +40,7 @@ android {
 }
 
 dependencies {
+    // Guava for immutable collections and utilities
     implementation 'com.google.guava:guava:21.0'
     implementation 'com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava'
 
