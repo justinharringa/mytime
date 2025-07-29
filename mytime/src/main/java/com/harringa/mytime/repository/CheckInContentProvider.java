@@ -61,14 +61,18 @@ public class CheckInContentProvider {
         if (cursor.moveToFirst()) {
 
             do {
-                long dateTime = cursor.getLong(cursor
-                        .getColumnIndex(DatabaseHelper.CHECKIN_DATETIME));
-                Log.d(TAG, "dateTime: " + dateTime);
+                int columnIndex = cursor.getColumnIndex(DatabaseHelper.CHECKIN_DATETIME);
+                if (columnIndex >= 0) {
+                    long dateTime = cursor.getLong(columnIndex);
+                    Log.d(TAG, "dateTime: " + dateTime);
 
-                LocalDateTime localDateTime = Instant.ofEpochMilli(dateTime)
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDateTime();
-                dateTimes.add(localDateTime);
+                    LocalDateTime localDateTime = Instant.ofEpochMilli(dateTime)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDateTime();
+                    dateTimes.add(localDateTime);
+                } else {
+                    Log.e(TAG, "Column " + DatabaseHelper.CHECKIN_DATETIME + " not found in cursor");
+                }
 
             } while (cursor.moveToNext());
         }
