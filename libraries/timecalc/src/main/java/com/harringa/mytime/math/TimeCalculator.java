@@ -48,10 +48,9 @@ public class TimeCalculator {
     }
 
     private static Duration durationBetweenPairOfDateTimesStartingAt(final List<LocalDateTime> dateTimes, final int index) {
-        return Duration.between(
-            roundFloorOfMinute(dateTimes.get(index)),
-            roundFloorOfMinute(dateTimes.get(index + 1))
-        );
+        LocalDateTime start = roundFloorOfMinute(dateTimes.get(index));
+        LocalDateTime end = roundFloorOfMinute(dateTimes.get(index + 1));
+        return Duration.between(start, end);
     }
 
     private static Duration millisBetweenNowAndLastDateTime(final List<LocalDateTime> dateTimes) {
