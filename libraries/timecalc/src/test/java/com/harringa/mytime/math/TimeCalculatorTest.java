@@ -1,8 +1,10 @@
 package com.harringa.mytime.math;
 
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import java.time.ZoneId;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -15,7 +17,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class TimeCalculatorTest {
 
-    private static final LocalDateTime NOW = LocalDateTime.now();
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2024-01-15T12:00:00Z"), ZoneId.systemDefault());
+    private static final LocalDateTime NOW = LocalDateTime.now(FIXED_CLOCK);
     public static final Duration FIVE_MINUTES = Duration.ofMinutes(5);
 
     private static final LocalDateTime FIVE_MINUTES_AGO = NOW.minus(FIVE_MINUTES);
@@ -31,7 +34,7 @@ public class TimeCalculatorTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        // No need to set fixed time for Java 8 Time API
+        TimeCalculator.setClock(FIXED_CLOCK);
     }
 
     @Test

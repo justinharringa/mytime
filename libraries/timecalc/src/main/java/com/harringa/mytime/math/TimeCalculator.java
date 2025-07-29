@@ -1,11 +1,18 @@
 package com.harringa.mytime.math;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 public class TimeCalculator {
+
+    private static Clock clock = Clock.systemDefaultZone();
+
+    public static void setClock(Clock clock) {
+        TimeCalculator.clock = clock;
+    }
 
     public static Duration totalTime(final List<LocalDateTime> dateTimes) {
         Duration totalDuration = Duration.ZERO;
@@ -15,16 +22,17 @@ public class TimeCalculator {
             index = indexForNextPair(index);
         }
         final LocalDateTime lastDateTime = lastDateTime(dateTimes);
+        LocalDateTime now = LocalDateTime.now(clock);
         if (hasAnInstantWithoutAPair(dateTimes) &&
                 (lastDateTime.isAfter(beginningOfToday()) ||
-                lastDateTime.isBefore(LocalDateTime.now()))) {
+                lastDateTime.isBefore(now))) {
             totalDuration = totalDuration.plus(millisBetweenNowAndLastDateTime(dateTimes));
         }
         return totalDuration;
     }
 
     private static LocalDateTime beginningOfToday() {
-        return LocalDateTime.now().toLocalDate().atStartOfDay().plusDays(1);
+        return LocalDateTime.now(clock).toLocalDate().atStartOfDay().plusDays(1);
     }
 
     private static Duration addIntervalOfDateTimesToTotal(final List<LocalDateTime> dateTimes, final int index, final Duration totalDuration) {
@@ -49,7 +57,7 @@ public class TimeCalculator {
     private static Duration millisBetweenNowAndLastDateTime(final List<LocalDateTime> dateTimes) {
         return Duration.between(
             roundFloorOfMinute(lastDateTime(dateTimes)), 
-            LocalDateTime.now()
+            LocalDateTime.now(clock)
         );
     }
 
