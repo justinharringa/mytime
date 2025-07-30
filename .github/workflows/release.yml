@@ -48,7 +48,7 @@ jobs:
         echo "Keystore file exists: $([ -f "upload-keystore.jks" ] && echo "YES" || echo "NO")"
         ./gradlew assembleRelease
       env:
-        UPLOAD_KEYSTORE: upload-keystore.jks
+        UPLOAD_KEYSTORE: ../upload-keystore.jks
         UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
         UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
         
