@@ -12,14 +12,14 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
         cache: 'gradle'
-        
+
     - name: Set up Android SDK
       uses: android-actions/setup-android@v3
         
@@ -32,54 +32,68 @@ jobs:
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
         restore-keys: |
           ${{ runner.os }}-gradle-
-          
+
     - name: Decode upload keystore
-      run: |
-        echo ${{ secrets.UPLOAD_KEYSTORE }} | base64 -d > upload-keystore.jks
-        echo "Keystore file created successfully"
+      run: echo ${{ secrets.UPLOAD_KEYSTORE }} | base64 -d > upload-keystore.jks
       env:
         UPLOAD_KEYSTORE: ${{ secrets.UPLOAD_KEYSTORE }}
-        
-    - name: Build signed release APK
-      run: |
-        echo "Checking environment variables..."
-        echo "UPLOAD_KEYSTORE exists: $([ -n "$UPLOAD_KEYSTORE" ] && echo "YES" || echo "NO")"
-        echo "UPLOAD_KEY_ALIAS exists: $([ -n "$UPLOAD_KEY_ALIAS" ] && echo "YES" || echo "NO")"
-        echo "UPLOAD_KEY_ALIAS value: $UPLOAD_KEY_ALIAS"
-        echo "UPLOAD_KEY_PASSWORD exists: $([ -n "$UPLOAD_KEY_PASSWORD" ] && echo "YES" || echo "NO")"
-        echo "Keystore file exists: $([ -f "upload-keystore.jks" ] && echo "YES" || echo "NO")"
-        echo "Current working directory: $(pwd)"
-        echo "Keystore file path: $(realpath upload-keystore.jks)"
-        echo "Testing keystore access (without exposing sensitive data):"
-        keytool -list -keystore upload-keystore.jks -storepass "$UPLOAD_KEY_PASSWORD" -alias "$UPLOAD_KEY_ALIAS" > /dev/null 2>&1 && echo "Keystore access successful" || echo "Keystore access failed"
-        ./gradlew assembleRelease
+
+    - name: Build signed release App Bundle
+      run: ./gradlew bundleRelease
       env:
         UPLOAD_KEYSTORE: ../upload-keystore.jks
         UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
         UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+
+    - name: Generate Release Notes
+      id: release_notes
+      run: |
+        # Get the previous tag
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+
+        if [ -n "$PREVIOUS_TAG" ]; then
+          # Generate changelog from commits since previous tag
+          CHANGELOG=$(git log --pretty=format:"- %s" ${PREVIOUS_TAG}..HEAD | grep -v "Merge pull request" | grep -v "Merge branch" | head -20)
+        else
+          # If no previous tag, show recent commits
+          CHANGELOG=$(git log --pretty=format:"- %s" --oneline -10)
+        fi
+
+        # Extract build info from build.gradle
+        TARGET_SDK=$(grep "compileSdk" mytime/build.gradle | awk '{print $2}')
+        MIN_SDK=$(grep "minSdk" mytime/build.gradle | awk '{print $2}')
+        VERSION_CODE=$(grep "versionCode" mytime/build.gradle | awk '{print $2}')
+        VERSION_NAME=$(grep "versionName" mytime/build.gradle | sed 's/versionName "\(.*\)"/\1/')
+        JAVA_VERSION=$(grep "sourceCompatibility" mytime/build.gradle | sed 's/.*VERSION_\([0-9]*\).*/\1/')
+
+        # Create release body
+        cat << EOF > release_notes.md
+        ## Release ${{ github.ref_name }}
+
+        ### What's New
+        $CHANGELOG
+
+        ### Installation
+        Download the App Bundle (.aab) and upload to Google Play Console for distribution.
+
+        ### Build Info
+        - Version: $VERSION_NAME ($VERSION_CODE)
+        - Target SDK: $TARGET_SDK
+        - Min SDK: $MIN_SDK (Android $(echo "scale=1; $MIN_SDK/10" | bc)+)
+        - Java Version: $JAVA_VERSION
+        EOF
         
+        echo "notes<<EOF" >> $GITHUB_OUTPUT
+        cat release_notes.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          mytime/build/outputs/apk/release/mytime-release.apk
-        body: |
-          ## Release ${{ github.ref_name }}
-          
-          ### What's New
-          - Updated to target SDK 34 for Google Play compliance
-          - Migrated to Java 8 Time API for better performance
-          - Implemented ViewHolder pattern for improved scrolling
-          - Enhanced error handling and code quality
-          
-          ### Installation
-          Download the APK and install on Android 8.0+ devices.
-          
-          ### Build Info
-          - Target SDK: 34
-          - Min SDK: 26 (Android 8.0+)
-          - Java Version: 17
+          mytime/build/outputs/bundle/release/mytime-release.aab
+        body: ${{ steps.release_notes.outputs.notes }}
         draft: false
         prerelease: false
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

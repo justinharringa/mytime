@@ -11,8 +11,8 @@ android {
     defaultConfig {
         minSdk 26
         targetSdk 34
-        versionCode 11
-        versionName "1.1.0"
+        versionCode 12
+        versionName "1.1.1"
         multiDexEnabled true
     }
     compileOptions {
@@ -26,11 +26,6 @@ android {
             def uploadKeystore = System.getenv("UPLOAD_KEYSTORE")
             def uploadPassword = System.getenv("UPLOAD_KEY_PASSWORD")
             def uploadAlias = System.getenv("UPLOAD_KEY_ALIAS")
-
-            println "Debug: UPLOAD_KEYSTORE = ${uploadKeystore}"
-            println "Debug: UPLOAD_KEY_PASSWORD = ${uploadPassword ? 'SET' : 'NOT SET'}"
-            println "Debug: UPLOAD_KEY_ALIAS = ${uploadAlias}"
-
             storeFile file(uploadKeystore ? uploadKeystore : '../upload-keystore.jks')
             storePassword uploadPassword
             keyAlias uploadAlias
