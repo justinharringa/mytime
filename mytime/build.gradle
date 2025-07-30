@@ -23,10 +23,18 @@ android {
     signingConfigs {
         release {
             // Play App Signing - only need upload key
-            storeFile file(System.getenv("UPLOAD_KEYSTORE") ? System.getenv("UPLOAD_KEYSTORE") : 'build.gradle')
-            storePassword System.getenv("UPLOAD_KEY_PASSWORD")
-            keyAlias System.getenv("UPLOAD_KEY_ALIAS")
-            keyPassword System.getenv("UPLOAD_KEY_PASSWORD")
+            def uploadKeystore = System.getenv("UPLOAD_KEYSTORE")
+            def uploadPassword = System.getenv("UPLOAD_KEY_PASSWORD")
+            def uploadAlias = System.getenv("UPLOAD_KEY_ALIAS")
+
+            println "Debug: UPLOAD_KEYSTORE = ${uploadKeystore}"
+            println "Debug: UPLOAD_KEY_PASSWORD = ${uploadPassword ? 'SET' : 'NOT SET'}"
+            println "Debug: UPLOAD_KEY_ALIAS = ${uploadAlias}"
+
+            storeFile file(uploadKeystore ? uploadKeystore : '../upload-keystore.jks')
+            storePassword uploadPassword
+            keyAlias uploadAlias
+            keyPassword uploadPassword
         }
     }
     buildTypes {
