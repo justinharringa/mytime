@@ -36,6 +36,7 @@ jobs:
     - name: Decode upload keystore
       run: |
         echo ${{ secrets.UPLOAD_KEYSTORE }} | base64 -d > upload-keystore.jks
+        echo "Keystore file created successfully"
       env:
         UPLOAD_KEYSTORE: ${{ secrets.UPLOAD_KEYSTORE }}
         
@@ -44,8 +45,13 @@ jobs:
         echo "Checking environment variables..."
         echo "UPLOAD_KEYSTORE exists: $([ -n "$UPLOAD_KEYSTORE" ] && echo "YES" || echo "NO")"
         echo "UPLOAD_KEY_ALIAS exists: $([ -n "$UPLOAD_KEY_ALIAS" ] && echo "YES" || echo "NO")"
+        echo "UPLOAD_KEY_ALIAS value: $UPLOAD_KEY_ALIAS"
         echo "UPLOAD_KEY_PASSWORD exists: $([ -n "$UPLOAD_KEY_PASSWORD" ] && echo "YES" || echo "NO")"
         echo "Keystore file exists: $([ -f "upload-keystore.jks" ] && echo "YES" || echo "NO")"
+        echo "Current working directory: $(pwd)"
+        echo "Keystore file path: $(realpath upload-keystore.jks)"
+        echo "Testing keystore access (without exposing sensitive data):"
+        keytool -list -keystore upload-keystore.jks -storepass "$UPLOAD_KEY_PASSWORD" -alias "$UPLOAD_KEY_ALIAS" > /dev/null 2>&1 && echo "Keystore access successful" || echo "Keystore access failed"
         ./gradlew assembleRelease
       env:
         UPLOAD_KEYSTORE: ../upload-keystore.jks
