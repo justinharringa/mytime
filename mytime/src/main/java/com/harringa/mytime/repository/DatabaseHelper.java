@@ -29,19 +29,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, VERSION);
         Log.d(TAG, "DatabaseHelper created");
-        context.openOrCreateDatabase(DATABASE_NAME, Context.MODE_PRIVATE, null);
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
         Log.d(TAG, "Creating database");
-
         db.execSQL(CREATE_CHECKIN);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         Log.d(TAG, "Prepping database upgrade");
-
     }
 }

@@ -43,3 +43,12 @@ proguard/
 # Local IDEA workspace
 .idea/workspace.xml
 
+# VSCode
+.vscode/
+
+# Keystore files - should never be committed to version control
+*.jks
+*.keystore
+enc-keystore
+pepk.jar
+upload_certificate.pem
