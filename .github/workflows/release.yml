@@ -96,7 +96,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          mytime/build/outputs/bundle/release/mytime-release.aab
+          mytime/build/outputs/bundle/release/mytime-*.aab
         body: ${{ steps.release_notes.outputs.notes }}
         draft: false
         prerelease: false

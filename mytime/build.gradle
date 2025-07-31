@@ -142,6 +142,9 @@ android {
     }
 }
 
+// Set the base name for archives to include version
+project.archivesBaseName = "mytime-${versionInfo.versionName}"
+
 dependencies {
     // Guava for immutable collections and utilities
     implementation 'com.google.guava:guava:23.0'
