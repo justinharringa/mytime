@@ -59,12 +59,17 @@ jobs:
           CHANGELOG=$(git log --pretty=format:"- %s" --oneline -10)
         fi
 
-        # Extract build info from build.gradle
-        TARGET_SDK=$(grep "compileSdk" mytime/build.gradle | awk '{print $2}')
-        MIN_SDK=$(grep "minSdk" mytime/build.gradle | awk '{print $2}')
-        VERSION_CODE=$(grep "versionCode" mytime/build.gradle | awk '{print $2}')
-        VERSION_NAME=$(grep "versionName" mytime/build.gradle | sed 's/versionName "\(.*\)"/\1/')
-        JAVA_VERSION=$(grep "sourceCompatibility" mytime/build.gradle | sed 's/.*VERSION_\([0-9]*\).*/\1/')
+        # Get version info from Gradle (single source of truth)
+        VERSION_OUTPUT=$(./gradlew outputVersionInfo --quiet)
+        if [ $? -ne 0 ]; then
+          echo "Error: Failed to retrieve version information from Gradle." >&2
+          exit 1
+        fi
+        VERSION_NAME=$(echo "$VERSION_OUTPUT" | grep "VERSION_NAME=" | sed 's/VERSION_NAME=//')
+        VERSION_CODE=$(echo "$VERSION_OUTPUT" | grep "VERSION_CODE=" | sed 's/VERSION_CODE=//')
+        TARGET_SDK=$(echo "$VERSION_OUTPUT" | grep "TARGET_SDK=" | sed 's/TARGET_SDK=//')
+        MIN_SDK=$(echo "$VERSION_OUTPUT" | grep "MIN_SDK=" | sed 's/MIN_SDK=//')
+        JAVA_VERSION=$(echo "$VERSION_OUTPUT" | grep "JAVA_VERSION=" | sed 's/JAVA_VERSION=//')
 
         # Create release body
         cat << EOF > release_notes.md
