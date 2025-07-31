@@ -17,6 +17,7 @@ public class CheckInContentProvider {
     private static final String TAG = "CheckInContentProvider";
     private DatabaseHelper databaseHelper;
     private static CheckInContentProvider instance;
+    private SQLiteDatabase database;
 
     public static CheckInContentProvider getInstance(Context context) {
         if (instance == null) {
@@ -26,40 +27,85 @@ public class CheckInContentProvider {
         return instance;
     }
 
-    public void saveCheckIn(LocalDateTime checkIn) {
+    public boolean saveCheckIn(LocalDateTime checkIn) {
         Log.d(TAG, "saveCheckIn()");
+
+        // Check for duplicate check-in within 1 minute
+        if (isDuplicateCheckIn(checkIn)) {
+            Log.d(TAG, "Duplicate check-in detected, skipping");
+            return false;
+        }
+
         ContentValues contentValues = new ContentValues();
         long millis = checkIn.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
         contentValues.put(DatabaseHelper.CHECKIN_DATETIME, millis);
         Log.d(TAG, "millis: " + millis);
         Log.d(TAG, "date: " + checkIn.getYear() + "-" + checkIn.getMonthValue() + "-" + checkIn.getDayOfMonth());
 
-        getConnection().insert(DatabaseHelper.CHECKIN_TABLE, "", contentValues);
-        closeConnection();
+        SQLiteDatabase db = getDatabase();
+        db.beginTransaction();
+        try {
+            db.insert(DatabaseHelper.CHECKIN_TABLE, "", contentValues);
+            db.setTransactionSuccessful();
+            return true;
+        } finally {
+            db.endTransaction();
+        }
+    }
 
+    private boolean isDuplicateCheckIn(LocalDateTime checkIn) {
+        SQLiteDatabase db = getDatabase();
+        long checkInMillis = checkIn.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        long oneMinuteInMillis = 60000; // 1 minute in milliseconds
+
+        String selection = DatabaseHelper.CHECKIN_DATETIME + " BETWEEN ? AND ?";
+        String[] selectionArgs = {
+            String.valueOf(checkInMillis - oneMinuteInMillis),
+            String.valueOf(checkInMillis + oneMinuteInMillis)
+        };
+
+        Cursor cursor = null;
+        try {
+            cursor = db.query(DatabaseHelper.CHECKIN_TABLE,
+                    new String[]{DatabaseHelper.CHECKIN_ID},
+                    selection,
+                    selectionArgs,
+                    null,
+                    null,
+                    null);
+
+            return cursor.getCount() > 0;
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
     }
 
     public List<LocalDateTime> getAll() {
         Log.d(TAG, "getAll()");
-        Cursor cursor = getConnection().query(DatabaseHelper.CHECKIN_TABLE,
-                new String[]{DatabaseHelper.CHECKIN_ID, DatabaseHelper.CHECKIN_DATETIME},
-                null,
-                null,
-                null,
-                null,
-                DatabaseHelper.CHECKIN_DATETIME + " DESC");
+        SQLiteDatabase db = getDatabase();
+        Cursor cursor = null;
+        try {
+            cursor = db.query(DatabaseHelper.CHECKIN_TABLE,
+                    new String[]{DatabaseHelper.CHECKIN_ID, DatabaseHelper.CHECKIN_DATETIME},
+                    null,
+                    null,
+                    null,
+                    null,
+                    DatabaseHelper.CHECKIN_DATETIME + " DESC");
 
-        List<LocalDateTime> dateTimes = getCheckIns(cursor);
-
-        closeConnection();
-
-        return dateTimes;
+            return getCheckIns(cursor);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
     }
 
     private List<LocalDateTime> getCheckIns(Cursor cursor) {
         List<LocalDateTime> dateTimes = new ArrayList<>();
         if (cursor.moveToFirst()) {
-
             do {
                 int columnIndex = cursor.getColumnIndex(DatabaseHelper.CHECKIN_DATETIME);
                 if (columnIndex >= 0) {
@@ -84,11 +130,21 @@ public class CheckInContentProvider {
         databaseHelper = new DatabaseHelper(context);
     }
 
-    private SQLiteDatabase getConnection() {
-        return databaseHelper.getWritableDatabase();
+    private SQLiteDatabase getDatabase() {
+        if (database == null || !database.isOpen()) {
+            database = databaseHelper.getWritableDatabase();
+        }
+        return database;
     }
 
-    private void closeConnection() {
-        databaseHelper.close();
+    public void close() {
+        if (database != null && database.isOpen()) {
+            database.close();
+            database = null;
+        }
+        if (databaseHelper != null) {
+            databaseHelper.close();
+            databaseHelper = null;
+        }
     }
 }

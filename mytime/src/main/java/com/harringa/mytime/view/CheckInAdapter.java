@@ -24,7 +24,7 @@ public class CheckInAdapter extends BaseAdapter {
 
     private static final String TAG = "CheckInAdapter";
     private final Context context;
-    private final ImmutableListMultimap<Integer, LocalDateTime> dateTimesGroupedByDate;
+    private final ImmutableListMultimap<String, LocalDateTime> dateTimesGroupedByDate;
 
     // Static ViewHolder class for view recycling
     private static class ViewHolder {
@@ -33,7 +33,7 @@ public class CheckInAdapter extends BaseAdapter {
         TextView dateTotal;
     }
 
-    public CheckInAdapter(Context context, ImmutableListMultimap<Integer, LocalDateTime> dateTimesGroupedByDate) {
+    public CheckInAdapter(Context context, ImmutableListMultimap<String, LocalDateTime> dateTimesGroupedByDate) {
         this.context = context;
         this.dateTimesGroupedByDate = dateTimesGroupedByDate;
     }
@@ -45,7 +45,7 @@ public class CheckInAdapter extends BaseAdapter {
 
     @Override
     public ImmutableList<LocalDateTime> getItem(int position) {
-        final Integer key = dateTimesGroupedByDate.keySet().asList().get(position);
+        final String key = dateTimesGroupedByDate.keySet().asList().get(position);
         return dateTimesGroupedByDate.get(key);
     }
 
@@ -76,23 +76,25 @@ public class CheckInAdapter extends BaseAdapter {
 
         // Get data for this position
         ImmutableList<LocalDateTime> sortedDateTimes = getSortedDateTimes(getItem(position));
+        if (sortedDateTimes.isEmpty()) {
+            return convertView;
+        }
+
         final LocalDateTime firstDateTimeForView = sortedDateTimes.get(0);
 
         // Update date
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MM/dd/yy");
         holder.checkInDate.setText(firstDateTimeForView.format(dateFormatter));
 
-        // Update times
+        // Update times - optimize string building
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
-        final StringBuilder stringBuilder = new StringBuilder();
+        final StringBuilder stringBuilder = new StringBuilder(sortedDateTimes.size() * 6); // Estimate 6 chars per time
         for (LocalDateTime dateTime : sortedDateTimes) {
-            Log.d(TAG, "dateTime: " + dateTime);
-            stringBuilder.append(dateTime.format(timeFormatter))
-                    .append("  ");
+            stringBuilder.append(dateTime.format(timeFormatter)).append("  ");
         }
         holder.checkInTimes.setText(stringBuilder.toString().trim());
 
-        // Update total time
+        // Update total time - optimize calculation
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
         LocalDateTime endOfDay = startOfDay.plusDays(1);
@@ -105,7 +107,6 @@ public class CheckInAdapter extends BaseAdapter {
         } else {
             final java.time.Duration totalTime = TimeCalculator.totalTime(sortedDateTimes);
             final long totalHours = totalTime.toHours();
-            Log.d(TAG, "totalHours: " + totalHours);
             if (totalHours >= 8) {
                 holder.dateTotal.setTextColor(context.getResources().getColor(R.color.forest_green));
             } else {
