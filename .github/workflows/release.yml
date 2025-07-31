@@ -67,11 +67,9 @@ jobs:
         fi
         VERSION_NAME=$(echo "$VERSION_OUTPUT" | grep "VERSION_NAME=" | sed 's/VERSION_NAME=//')
         VERSION_CODE=$(echo "$VERSION_OUTPUT" | grep "VERSION_CODE=" | sed 's/VERSION_CODE=//')
-
-        # Extract other build info from build.gradle
-        TARGET_SDK=$(grep "compileSdk" mytime/build.gradle | awk '{print $2}')
-        MIN_SDK=$(grep "minSdk" mytime/build.gradle | awk '{print $2}')
-        JAVA_VERSION=$(grep "sourceCompatibility" mytime/build.gradle | sed 's/.*VERSION_\([0-9]*\).*/\1/')
+        TARGET_SDK=$(echo "$VERSION_OUTPUT" | grep "TARGET_SDK=" | sed 's/TARGET_SDK=//')
+        MIN_SDK=$(echo "$VERSION_OUTPUT" | grep "MIN_SDK=" | sed 's/MIN_SDK=//')
+        JAVA_VERSION=$(echo "$VERSION_OUTPUT" | grep "JAVA_VERSION=" | sed 's/JAVA_VERSION=//')
 
         # Create release body
         cat << EOF > release_notes.md

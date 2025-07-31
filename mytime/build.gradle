@@ -170,6 +170,9 @@ task showVersion {
         println "Current Version Information:"
         println "  Version Name: ${versionInfo.versionName}"
         println "  Version Code: ${versionInfo.versionCode}"
+        println "  Target SDK: ${android.compileSdk}"
+        println "  Min SDK: ${android.defaultConfig.minSdk}"
+        println "  Java Version: ${android.compileOptions.sourceCompatibility}"
         println "  Build Type: ${project.hasProperty('buildType') ? project.buildType : 'debug'}"
         println "  CI Environment: ${System.getenv('CI') ? 'Yes' : 'No'}"
 
@@ -195,5 +198,8 @@ task outputVersionInfo {
     doLast {
         println "VERSION_NAME=${versionInfo.versionName}"
         println "VERSION_CODE=${versionInfo.versionCode}"
+        println "TARGET_SDK=${android.compileSdk}"
+        println "MIN_SDK=${android.defaultConfig.minSdk}"
+        println "JAVA_VERSION=${android.compileOptions.sourceCompatibility}"
     }
 }

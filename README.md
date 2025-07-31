@@ -138,6 +138,38 @@ mytime/
 - **Guava**: Google's core Java libraries (immutable collections)
 - **Java 8 Time API**: Built-in date/time manipulation (replaced Joda Time)
 
+## Version Management
+
+The project uses a centralized version management system through Gradle tasks:
+
+### Available Tasks
+
+- **`./gradlew showVersion`**: Display current version information including:
+  - Version Name and Code
+  - Target SDK and Min SDK
+  - Java Version
+  - Build Type and CI Environment status
+  - Git information
+
+- **`./gradlew outputVersionInfo`**: Output version information in CI/CD format:
+  ```
+  VERSION_NAME=1.1.2
+  VERSION_CODE=10104
+  TARGET_SDK=35
+  MIN_SDK=26
+  JAVA_VERSION=17
+  ```
+
+### Single Source of Truth
+
+All version information is extracted from the Gradle build configuration, ensuring consistency across:
+- Local development
+- CI/CD pipelines
+- Release generation
+- Documentation
+
+This eliminates the need for manual parsing of build.gradle files and reduces the risk of version mismatches.
+
 ## Technical Decisions
 
 ### Current Architecture
@@ -169,4 +201,4 @@ This app is compliant with:
 4. Ensure all tests pass (CI/CD will verify)
 5. Submit a pull request to `main`
 
-The CI/CD pipeline will automatically test your changes across multiple environments. 
+The CI/CD pipeline will automatically test your changes across multiple environments.
