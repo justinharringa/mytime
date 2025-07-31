@@ -103,11 +103,11 @@ def versionInfo = System.getenv('CI') ? getVersionFromGitCI() : getVersionFromGi
 
 android {
     namespace 'com.harringa.mytime'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         minSdk 26
-        targetSdk 34
+        targetSdk 35
         versionCode versionInfo.versionCode
         versionName versionInfo.versionName
         multiDexEnabled true
@@ -184,5 +184,16 @@ task showVersion {
         if (!gitDescribe.isEmpty()) {
             println "  Git Describe: ${gitDescribe}"
         }
+    }
+}
+
+// Task to output version info in a format suitable for CI/CD
+task outputVersionInfo {
+    group = 'versioning'
+    description = 'Output version information in a format suitable for CI/CD'
+
+    doLast {
+        println "VERSION_NAME=${versionInfo.versionName}"
+        println "VERSION_CODE=${versionInfo.versionCode}"
     }
 }
