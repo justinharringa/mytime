@@ -22,6 +22,7 @@
                 android:textAppearance="?android:attr/textAppearanceMedium"
                 android:text="@string/checkInDateHeadingText"
                 android:id="@+id/checkInDate"
+                android:contentDescription="@string/checkInDateDescription"
                 android:layout_weight="1"/>
 
         <TextView
@@ -31,6 +32,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/dateTotalHeading"
                 android:id="@+id/dateTotal"
+                android:contentDescription="@string/dateTotalDescription"
                 android:layout_weight="1"/>
     </LinearLayout>
 
@@ -41,6 +43,7 @@
             android:layout_height="wrap_content"
             android:layout_marginRight="10dp"
             android:layout_marginEnd="10dp"
-            android:text="@string/defaultCheckInTimeText"/>
+            android:text="@string/defaultCheckInTimeText"
+            android:contentDescription="@string/checkInTimesDescription"/>
 
 </LinearLayout>

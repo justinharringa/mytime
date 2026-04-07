@@ -108,7 +108,7 @@ public class CheckInAdapter extends BaseAdapter {
             final java.time.Duration totalTime = TimeCalculator.totalTime(sortedDateTimes);
             final long totalHours = totalTime.toHours();
             if (totalHours >= 8) {
-                holder.dateTotal.setTextColor(context.getResources().getColor(R.color.forest_green));
+                holder.dateTotal.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.forest_green));
             } else {
                 holder.dateTotal.setTextColor(Color.RED);
             }

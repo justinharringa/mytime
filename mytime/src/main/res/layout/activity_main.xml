@@ -10,7 +10,8 @@
             android:layout_width="match_parent"
             android:layout_height="0dip"
             android:layout_weight="1"
-            android:id="@+id/checkInListView"/>
+            android:id="@+id/checkInListView"
+            android:contentDescription="@string/checkInListDescription"/>
 
     <FrameLayout
             android:layout_width="match_parent"
@@ -19,12 +20,14 @@
         <TimePicker
                 android:layout_width="wrap_content"
                 android:layout_height="120dp"
-                android:id="@+id/timePicker"/>
+                android:id="@+id/timePicker"
+                android:contentDescription="@string/timePickerDescription"/>
         <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/checkInButton"
                 android:id="@+id/checkIn"
+                android:contentDescription="@string/checkInButtonDescription"
                 android:layout_gravity="center|end"
                 android:layout_marginRight="@dimen/activity_horizontal_margin"
                 android:layout_marginEnd="@dimen/activity_horizontal_margin"
