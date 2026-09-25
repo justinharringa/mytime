@@ -112,12 +112,20 @@ android {
     buildTypes {
         release {
             minifyEnabled = true
+            shrinkResources = true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.txt'
             signingConfig = signingConfigs.release
         }
         debug {
             minifyEnabled = false
             debuggable = true
+        }
+    }
+    packaging {
+        resources {
+            // AGP adds kotlin-stdlib, but the app has no Kotlin code; R8 strips the classes,
+            // this drops the builtins metadata it would otherwise ship
+            excludes += 'kotlin/**'
         }
     }
 }
