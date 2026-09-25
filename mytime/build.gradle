@@ -140,13 +140,8 @@ android {
     }
 }
 
-// Robolectric only runs the Android 16 (SDK 36) framework on Java 21+; the build itself
-// (and the app's bytecode level) stays on Java 17
+// Robolectric's FileDescriptor shadow reads JDK internals that JDK 17+ doesn't export
 tasks.withType(Test).configureEach {
-    javaLauncher = javaToolchains.launcherFor {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-    // Robolectric's FileDescriptor shadow reads JDK internals that Java 17+ doesn't export
     jvmArgs '--add-exports=java.base/jdk.internal.access=ALL-UNNAMED'
 }
 
