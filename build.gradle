@@ -10,3 +10,11 @@ plugins {
 
     id 'com.android.application' version '9.4.1' apply false
 }
+
+// Unit tests run the Android 16 (SDK 36) framework under Robolectric, and those framework
+// classes are compiled for Java 21. Fail early with a clear message rather than midway through
+// the tests. (The app itself still compiles to Java 17 bytecode.)
+if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
+    throw new GradleException("This build needs JDK 21 or newer, but is running on Java ${JavaVersion.current()}. " +
+            "Point JAVA_HOME at a JDK 21 (for example Android Studio's bundled JDK).")
+}

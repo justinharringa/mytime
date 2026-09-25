@@ -1,20 +1,20 @@
 # MyTime Android App
 
-A simple Android time tracking application built with Java and AndroidX.
+A simple Android time tracking application built with Java.
 
 ## Features
 
 - Time tracking and check-in functionality
 - List view of check-ins grouped by date
-- Modern Android UI with Material Design components
-- Compatible with Android API 16+ (Android 4.1+)
+- Simple UI built from standard Android widgets
+- Runs on Android 8.0+ (API 26)
 
 ## Build Requirements
 
-- **Java**: 17 (LTS)
-- **Android SDK**: API 34 (Android 14)
-- **Gradle**: 8.4
-- **Android Gradle Plugin**: 8.3.0
+- **JDK**: 21 (LTS). The build stops with a clear error on older JDKs. Android Studio's bundled JDK works; on the command line, point `JAVA_HOME` at a JDK 21. The app itself still compiles to Java 17 bytecode.
+- **Android SDK**: API 36 (Android 16)
+- **Gradle**: 9.8.0 (via the wrapper)
+- **Android Gradle Plugin**: 9.4.1
 
 ## Local Development
 
@@ -33,6 +33,7 @@ A simple Android time tracking application built with Java and AndroidX.
    ```bash
    ./gradlew test
    ```
+   App module tests use Robolectric, so no emulator or device is needed. For a coverage report, run `./gradlew :mytime:createDebugUnitTestCoverageReport`.
 
 4. **Build debug APK**
    ```bash
@@ -52,20 +53,20 @@ This project uses trunk-based development with comprehensive GitHub Actions work
 
 **Triggers:** Push to `main`, Pull Requests, Manual dispatch
 
-- Builds the project with Java 17
-- Runs all tests
+- Builds the project with JDK 21
+- Runs all unit tests
+- Checks CI version numbering (`scripts/check-version-info.sh`)
+- Adds a test coverage table to the job summary and uploads the coverage reports
 - Generates debug APK (for testing)
 - Runs lint checks
-- Tests compatibility across API levels (16, 21, 29, 34)
-- Performs code quality checks
 
 ### 🚀 **Release Workflow** (`release.yml`)
 
 **Triggers:** Push tags matching `v*` (e.g., `v1.1.0`)
 
-- Builds signed release APK
+- Builds the signed release App Bundle (AAB)
 - Creates GitHub release with release notes
-- Uploads signed APK to release assets
+- Uploads the AAB to release assets
 - Only runs when you push a version tag
 
 ### 🔐 **Signing Configuration**
@@ -85,22 +86,18 @@ To set up Play App Signing:
 
 ### 📋 **Release Process**
 
-1. **Update version** in `mytime/build.gradle`:
-   ```gradle
-   versionCode 12
-   versionName "1.1.1"
-   ```
-
-2. **Create and push tag**:
+1. **Create and push a version tag.** The version name and code come from the tag; see [VERSIONING.md](VERSIONING.md):
    ```bash
    git tag v1.1.1
    git push origin v1.1.1
    ```
 
-3. **GitHub Actions automatically**:
-   - Builds signed release APK
+2. **GitHub Actions automatically**:
+   - Builds the signed release App Bundle (AAB)
    - Creates GitHub release
-   - Uploads APK to release assets
+   - Uploads the AAB to release assets
+
+3. **Upload the AAB** to Google Play Console.
 
 ### 📋 **Workflow Triggers**
 
@@ -134,7 +131,6 @@ mytime/
 
 ## Dependencies
 
-- **AndroidX**: Modern Android support libraries
 - **Guava**: Google's core Java libraries (immutable collections)
 - **Java 8 Time API**: Built-in date/time manipulation (replaced Joda Time)
 
@@ -153,9 +149,9 @@ The project uses a centralized version management system through Gradle tasks:
 
 - **`./gradlew outputVersionInfo`**: Output version information in CI/CD format:
   ```
-  VERSION_NAME=1.1.2
-  VERSION_CODE=10104
-  TARGET_SDK=35
+  VERSION_NAME=1.1.6
+  VERSION_CODE=10106
+  TARGET_SDK=36
   MIN_SDK=26
   JAVA_VERSION=17
   ```
@@ -175,21 +171,18 @@ This eliminates the need for manual parsing of build.gradle files and reduces th
 ### Current Architecture
 - **ListView with BaseAdapter**: Using the traditional ListView pattern with proper ViewHolder pattern for performance
 - **Basic Android Widgets**: Using TextView, Button, TimePicker for minimal method count
-- **Multidex**: Enabled to handle 64K method limit while maintaining Guava's immutable properties
 - **View Recycling**: Implemented ViewHolder pattern in CheckInAdapter for efficient scrolling
 
 ### Future Improvements
 - **RecyclerView Migration**: Consider migrating from ListView to RecyclerView for better performance
 - **Material Design**: Upgrade to Material Design components for modern UI/UX
-- **Note**: These upgrades would add ~9,000 methods but are supported by multidex
 
 ## Compliance
 
 This app is compliant with:
 
-- ✅ **Google Play target SDK requirements** (API 34)
-- ✅ **Modern Android development practices** (AndroidX)
-- ✅ **Java 17 LTS** for optimal performance
+- ✅ **Google Play target SDK requirements** (API 36)
+- ✅ **JDK 21 (LTS) build**, with the app compiled to Java 17 bytecode
 - ✅ **Java 8 Time API** support (minSdk 26)
 - ✅ **Backward compatibility** (minSdk 26 - Android 8.0+)
 

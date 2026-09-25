@@ -15,11 +15,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Set up JDK 17
+    - name: Set up JDK 21
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: '17'
+        java-version: '21'
         cache: 'gradle'
         
     - name: Set up Android SDK
@@ -40,6 +40,27 @@ jobs:
       
     - name: Run tests
       run: ./gradlew test
+
+    - name: Check version numbering
+      run: ./scripts/check-version-info.sh
+
+    - name: Generate coverage reports
+      run: ./gradlew :mytime:createDebugUnitTestCoverageReport :libraries:timecalc:jacocoTestReport
+
+    - name: Summarize coverage
+      run: |
+        ./scripts/coverage-summary.py \
+          mytime=mytime/build/reports/coverage/test/debug/report.xml \
+          timecalc=libraries/timecalc/build/reports/jacoco/test/jacocoTestReport.xml \
+          >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-reports
+        path: |
+          mytime/build/reports/coverage/test/debug/
+          libraries/timecalc/build/reports/jacoco/test/
       
     - name: Build debug APK
       run: ./gradlew assembleDebug
