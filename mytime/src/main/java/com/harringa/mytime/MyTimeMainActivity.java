@@ -176,10 +176,6 @@ public class MyTimeMainActivity extends Activity implements View.OnClickListener
 
         // Remove any pending debounced updates
         debounceHandler.removeCallbacks(debouncedUpdate);
-
-        if (checkInContentProvider != null) {
-            checkInContentProvider.close();
-        }
     }
 
 }

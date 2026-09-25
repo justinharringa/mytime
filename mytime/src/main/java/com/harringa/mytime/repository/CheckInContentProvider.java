@@ -22,7 +22,7 @@ public class CheckInContentProvider {
     public static CheckInContentProvider getInstance(Context context) {
         if (instance == null) {
             Log.d(TAG, "New instance created");
-            instance = new CheckInContentProvider(context);
+            instance = new CheckInContentProvider(context.getApplicationContext());
         }
         return instance;
     }
@@ -135,16 +135,5 @@ public class CheckInContentProvider {
             database = databaseHelper.getWritableDatabase();
         }
         return database;
-    }
-
-    public void close() {
-        if (database != null && database.isOpen()) {
-            database.close();
-            database = null;
-        }
-        if (databaseHelper != null) {
-            databaseHelper.close();
-            databaseHelper = null;
-        }
     }
 }
