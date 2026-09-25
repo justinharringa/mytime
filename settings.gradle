@@ -16,6 +16,11 @@ pluginManagement {
         mavenCentral()
     }
 }
+plugins {
+    // Downloads a matching JDK when a toolchain requested by the build (the Java 21 unit
+    // test launcher in mytime/build.gradle) isn't installed locally
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
 dependencyResolutionManagement {
     /**
      * The dependencyResolutionManagement.repositories

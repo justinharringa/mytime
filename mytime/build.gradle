@@ -121,6 +121,14 @@ android {
         debug {
             minifyEnabled = false
             debuggable = true
+            // JaCoCo report for unit tests: createDebugUnitTestCoverageReport
+            enableUnitTestCoverage = true
+        }
+    }
+    testOptions {
+        unitTests {
+            // Robolectric needs merged resources to inflate layouts
+            includeAndroidResources = true
         }
     }
     packaging {
@@ -129,6 +137,27 @@ android {
             // this drops the builtins metadata it would otherwise ship
             excludes += 'kotlin/**'
         }
+    }
+}
+
+// Robolectric only runs the Android 16 (SDK 36) framework on Java 21+; the build itself
+// (and the app's bytecode level) stays on Java 17
+tasks.withType(Test).configureEach {
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+    // Robolectric's FileDescriptor shadow reads JDK internals that Java 17+ doesn't export
+    jvmArgs '--add-exports=java.base/jdk.internal.access=ALL-UNNAMED'
+}
+
+// enableUnitTestCoverage makes AGP apply the jacoco plugin, which adds its extension to test
+// tasks. Robolectric loads app classes through its own class loader (no code source location),
+// and JaCoCo skips those unless told otherwise, reporting 0% for the app module.
+pluginManager.withPlugin('jacoco') {
+    tasks.withType(Test).configureEach {
+        def coverage = extensions.getByType(JacocoTaskExtension)
+        coverage.includeNoLocationClasses = true
+        coverage.excludes = ['jdk.internal.*']
     }
 }
 
@@ -147,6 +176,10 @@ dependencies {
     // implementation 'com.google.android.material:material:1.11.0'
 
     implementation project(':libraries:timecalc')
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.17'
+    testImplementation 'androidx.test:core:1.7.0'
 }
 
 // Task to display current version information
