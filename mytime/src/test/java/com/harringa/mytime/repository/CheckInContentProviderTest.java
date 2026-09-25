@@ -61,12 +61,33 @@ public class CheckInContentProviderTest {
         assertEquals(Collections.singletonList(NINE_AM), provider.getAll());
     }
 
+    // Check-ins are shown and totalled by the minute, so the next minute is a real check-in
+    // (e.g. in at 09:00, out at 09:01), not a duplicate
     @Test
-    public void checkInTwoMinutesLaterIsNotADuplicate() {
+    public void checkInOneMinuteLaterIsNotADuplicate() {
         assertTrue(provider.saveCheckIn(NINE_AM));
 
-        assertTrue(provider.saveCheckIn(NINE_AM.plusMinutes(2)));
-        assertEquals(Arrays.asList(NINE_AM.plusMinutes(2), NINE_AM), provider.getAll());
+        assertTrue(provider.saveCheckIn(NINE_AM.plusMinutes(1)));
+        assertEquals(Arrays.asList(NINE_AM.plusMinutes(1), NINE_AM), provider.getAll());
+    }
+
+    @Test
+    public void checkInOneMinuteEarlierIsNotADuplicate() {
+        assertTrue(provider.saveCheckIn(NINE_AM));
+
+        assertTrue(provider.saveCheckIn(NINE_AM.minusMinutes(1)));
+        assertEquals(Arrays.asList(NINE_AM, NINE_AM.minusMinutes(1)), provider.getAll());
+    }
+
+    // Older versions of the app saved seconds too; a row at 09:00:30 is still "09:00"
+    @Test
+    public void checkInIsADuplicateOfARowWithSecondsInTheSameMinute() {
+        final LocalDateTime withSeconds = NINE_AM.withSecond(30);
+        assertTrue(provider.saveCheckIn(withSeconds));
+
+        assertFalse(provider.saveCheckIn(NINE_AM));
+        assertTrue(provider.saveCheckIn(NINE_AM.plusMinutes(1)));
+        assertEquals(Arrays.asList(NINE_AM.plusMinutes(1), withSeconds), provider.getAll());
     }
 
     @Test

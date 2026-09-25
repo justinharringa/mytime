@@ -35,6 +35,8 @@ public class MyTimeMainActivity extends Activity implements View.OnClickListener
     // the new activity reloads the list)
     private static final ExecutorService DATABASE_EXECUTOR = Executors.newSingleThreadExecutor();
     private static final DateTimeFormatter GROUP_BY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    // Same format as the check-in times in the list
+    private static final DateTimeFormatter CHECK_IN_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private CheckInContentProvider checkInContentProvider;
     private ListView checkInList;
     private final Handler debounceHandler = new Handler(Looper.getMainLooper());
@@ -113,7 +115,7 @@ public class MyTimeMainActivity extends Activity implements View.OnClickListener
                 if (!wasSaved) {
                     // Show message for duplicate check-in
                     Toast.makeText(MyTimeMainActivity.this,
-                        "Check-in skipped - duplicate within 1 minute",
+                        getString(R.string.duplicateCheckInMessage, newTime.format(CHECK_IN_TIME_FORMATTER)),
                         Toast.LENGTH_SHORT).show();
                 }
                 updateCheckInList();

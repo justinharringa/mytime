@@ -9,6 +9,7 @@
     <string name="checkInDateHeadingText">checkInDateHeading</string>
     <string name="dateTotalHeading">dateTotalHeading</string>
     <string name="missingCheckInText">Missing Check In</string>
+    <string name="duplicateCheckInMessage">Already checked in at %1$s</string>
     <string name="checkInListDescription">List of check-in times grouped by date</string>
     <string name="timePickerDescription">Select check-in time</string>
     <string name="checkInButtonDescription">Save check-in at selected time</string>
