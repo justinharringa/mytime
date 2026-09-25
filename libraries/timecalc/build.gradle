@@ -10,6 +10,6 @@ java {
 version = '1.0'
 
 dependencies {
-    implementation 'com.google.guava:guava:21.0'
+    implementation 'com.google.guava:guava:33.7.1-android'
     testImplementation 'junit:junit:4.13.2'
 }
