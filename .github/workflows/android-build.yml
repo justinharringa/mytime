@@ -31,6 +31,7 @@ jobs:
         path: |
           ~/.gradle/caches
           ~/.gradle/wrapper
+          ~/.gradle/jdks
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
         restore-keys: |
           ${{ runner.os }}-gradle-
@@ -40,6 +41,27 @@ jobs:
       
     - name: Run tests
       run: ./gradlew test
+
+    - name: Check version numbering
+      run: ./scripts/check-version-info.sh
+
+    - name: Generate coverage reports
+      run: ./gradlew :mytime:createDebugUnitTestCoverageReport :libraries:timecalc:jacocoTestReport
+
+    - name: Summarize coverage
+      run: |
+        ./scripts/coverage-summary.py \
+          mytime=mytime/build/reports/coverage/test/debug/report.xml \
+          timecalc=libraries/timecalc/build/reports/jacoco/test/jacocoTestReport.xml \
+          >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-reports
+        path: |
+          mytime/build/reports/coverage/test/debug/
+          libraries/timecalc/build/reports/jacoco/test/
       
     - name: Build debug APK
       run: ./gradlew assembleDebug
