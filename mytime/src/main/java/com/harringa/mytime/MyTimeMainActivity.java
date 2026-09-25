@@ -26,7 +26,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 public class MyTimeMainActivity extends Activity implements View.OnClickListener {
 
@@ -38,7 +37,6 @@ public class MyTimeMainActivity extends Activity implements View.OnClickListener
     private static final DateTimeFormatter GROUP_BY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private CheckInContentProvider checkInContentProvider;
     private ListView checkInList;
-    private Future<?> updateTask;
     private final Handler debounceHandler = new Handler(Looper.getMainLooper());
     private final Runnable debouncedUpdate = new Runnable() {
         @Override
@@ -134,13 +132,9 @@ public class MyTimeMainActivity extends Activity implements View.OnClickListener
     }
 
     private void performUpdateCheckInList() {
-        // Skip a queued update that hasn't started yet; this one supersedes it
-        if (updateTask != null) {
-            updateTask.cancel(false);
-        }
-
-        // Load data in background
-        updateTask = DATABASE_EXECUTOR.submit(() -> {
+        // Load data in background. execute() rather than submit(), so a failure reaches the
+        // uncaught exception handler (and crash reporting) instead of vanishing into a Future
+        DATABASE_EXECUTOR.execute(() -> {
             final List<LocalDateTime> allCheckIns = checkInContentProvider.getAll();
             final ImmutableListMultimap<String, LocalDateTime> result =
                     Multimaps.index(allCheckIns, input -> input.format(GROUP_BY_DATE_FORMATTER));
@@ -155,11 +149,6 @@ public class MyTimeMainActivity extends Activity implements View.OnClickListener
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
-        // Skip a pending list update that hasn't started yet
-        if (updateTask != null) {
-            updateTask.cancel(false);
-        }
 
         // Remove any pending debounced updates
         debounceHandler.removeCallbacks(debouncedUpdate);
