@@ -2,7 +2,6 @@ package com.harringa.mytime;
 
 import android.app.Activity;
 
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -17,7 +16,6 @@ import android.widget.ListView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Multimaps;
 import com.harringa.mytime.repository.CheckInContentProvider;
@@ -26,13 +24,19 @@ import com.harringa.mytime.view.CheckInAdapter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MyTimeMainActivity extends Activity implements View.OnClickListener {
 
     private static final String TAG = "MyTimeMainActivity";
+    // One background thread for the whole process, so database work runs in order even
+    // across activity recreation (e.g. a save started just before rotation finishes before
+    // the new activity reloads the list)
+    private static final ExecutorService DATABASE_EXECUTOR = Executors.newSingleThreadExecutor();
+    private static final DateTimeFormatter GROUP_BY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private CheckInContentProvider checkInContentProvider;
     private ListView checkInList;
-    private AsyncTask<Void, Void, ImmutableListMultimap<String, LocalDateTime>> updateTask;
     private final Handler debounceHandler = new Handler(Looper.getMainLooper());
     private final Runnable debouncedUpdate = new Runnable() {
         @Override
@@ -100,25 +104,23 @@ public class MyTimeMainActivity extends Activity implements View.OnClickListener
         Log.d(TAG, "Saving " + newTime);
 
         // Save check-in in background
-        new AsyncTask<LocalDateTime, Void, Boolean>() {
-            @Override
-            protected Boolean doInBackground(LocalDateTime... params) {
-                return checkInContentProvider.saveCheckIn(params[0]);
-            }
-
-            @Override
-            protected void onPostExecute(Boolean wasSaved) {
+        DATABASE_EXECUTOR.execute(() -> {
+            final boolean wasSaved = checkInContentProvider.saveCheckIn(newTime);
+            runOnUiThread(() -> {
+                if (isDestroyed()) {
+                    return;
+                }
                 if (!wasSaved) {
                     // Show message for duplicate check-in
-                    Toast.makeText(MyTimeMainActivity.this, 
-                        "Check-in skipped - duplicate within 1 minute", 
+                    Toast.makeText(MyTimeMainActivity.this,
+                        "Check-in skipped - duplicate within 1 minute",
                         Toast.LENGTH_SHORT).show();
                 }
                 updateCheckInList();
                 // Re-enable button after operation completes
                 v.setEnabled(true);
-            }
-        }.execute(newTime);
+            });
+        });
     }
 
     private void updateCheckInList() {
@@ -130,49 +132,23 @@ public class MyTimeMainActivity extends Activity implements View.OnClickListener
     }
 
     private void performUpdateCheckInList() {
-        // Cancel any existing update task
-        if (updateTask != null && !updateTask.isCancelled()) {
-            updateTask.cancel(true);
-        }
-
-        // Load data in background
-        updateTask = new AsyncTask<Void, Void, ImmutableListMultimap<String, LocalDateTime>>() {
-            @Override
-            protected ImmutableListMultimap<String, LocalDateTime> doInBackground(Void... params) {
-                if (isCancelled()) {
-                    return null;
-                }
-                final List<LocalDateTime> allCheckIns = checkInContentProvider.getAll();
-                if (isCancelled()) {
-                    return null;
-                }
-                return Multimaps.index(allCheckIns, new Function<LocalDateTime, String>() {
-                    @Override
-                    public String apply(LocalDateTime input) {
-                        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-                        return input.format(dateFormatter);
-                    }
-                });
-            }
-
-            @Override
-            protected void onPostExecute(ImmutableListMultimap<String, LocalDateTime> result) {
-                if (result != null && !isFinishing()) {
+        // Load data in background. execute() rather than submit(), so a failure reaches the
+        // uncaught exception handler (and crash reporting) instead of vanishing into a Future
+        DATABASE_EXECUTOR.execute(() -> {
+            final List<LocalDateTime> allCheckIns = checkInContentProvider.getAll();
+            final ImmutableListMultimap<String, LocalDateTime> result =
+                    Multimaps.index(allCheckIns, input -> input.format(GROUP_BY_DATE_FORMATTER));
+            runOnUiThread(() -> {
+                if (!isFinishing() && !isDestroyed()) {
                     checkInList.setAdapter(new CheckInAdapter(MyTimeMainActivity.this, result));
                 }
-            }
-        };
-        updateTask.execute();
+            });
+        });
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
-        // Cancel any pending tasks
-        if (updateTask != null && !updateTask.isCancelled()) {
-            updateTask.cancel(true);
-        }
 
         // Remove any pending debounced updates
         debounceHandler.removeCallbacks(debouncedUpdate);
