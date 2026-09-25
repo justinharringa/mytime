@@ -9,6 +9,7 @@ import android.util.Log;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,7 +31,7 @@ public class CheckInContentProvider {
     public boolean saveCheckIn(LocalDateTime checkIn) {
         Log.d(TAG, "saveCheckIn()");
 
-        // Check for duplicate check-in within 1 minute
+        // Skip a second check-in for a minute that already has one
         if (isDuplicateCheckIn(checkIn)) {
             Log.d(TAG, "Duplicate check-in detected, skipping");
             return false;
@@ -53,15 +54,21 @@ public class CheckInContentProvider {
         }
     }
 
+    // Check-ins are shown and totalled by the minute, so a duplicate is an existing check-in in
+    // the same minute. Match the whole minute rather than the exact time, because older versions
+    // of the app saved seconds as well. The next minute is a real check-in (in at 09:00, out at
+    // 09:01), and dropping it would flip the in/out pairing for the rest of the day.
     private boolean isDuplicateCheckIn(LocalDateTime checkIn) {
         SQLiteDatabase db = getDatabase();
-        long checkInMillis = checkIn.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        long minuteStartMillis = checkIn.truncatedTo(ChronoUnit.MINUTES)
+                .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
         long oneMinuteInMillis = 60000; // 1 minute in milliseconds
 
-        String selection = DatabaseHelper.CHECKIN_DATETIME + " BETWEEN ? AND ?";
+        String selection = DatabaseHelper.CHECKIN_DATETIME + " >= ? AND "
+                + DatabaseHelper.CHECKIN_DATETIME + " < ?";
         String[] selectionArgs = {
-            String.valueOf(checkInMillis - oneMinuteInMillis),
-            String.valueOf(checkInMillis + oneMinuteInMillis)
+            String.valueOf(minuteStartMillis),
+            String.valueOf(minuteStartMillis + oneMinuteInMillis)
         };
 
         Cursor cursor = null;

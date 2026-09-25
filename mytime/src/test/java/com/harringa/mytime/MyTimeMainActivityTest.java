@@ -102,7 +102,7 @@ public class MyTimeMainActivityTest {
             assertNull(ShadowToast.getTextOfLatestToast());
             checkInAt(scenario, 7, 30);
 
-            assertEquals("Check-in skipped - duplicate within 1 minute", ShadowToast.getTextOfLatestToast());
+            assertEquals("Already checked in at 07:30", ShadowToast.getTextOfLatestToast());
             final List<LocalDateTime> checkIns = provider.getAll();
             assertEquals(2, checkIns.size());
             assertEquals(EARLIER_CHECK_IN, checkIns.get(1));
