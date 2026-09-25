@@ -23,7 +23,7 @@ jobs:
         cache: 'gradle'
         
     - name: Set up Android SDK
-      uses: android-actions/setup-android@v3
+      uses: android-actions/setup-android@v4
         
     - name: Cache Gradle packages
       uses: actions/cache@v4
@@ -73,7 +73,7 @@ jobs:
         cache: 'gradle'
         
     - name: Set up Android SDK
-      uses: android-actions/setup-android@v3
+      uses: android-actions/setup-android@v4
         
     - name: Test compatibility with API ${{ matrix.api-level }}
       run: ./gradlew assembleDebug -x assembleRelease
