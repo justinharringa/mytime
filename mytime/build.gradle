@@ -44,7 +44,9 @@ def getVersionFromGit() {
 
 // Alternative function that works better in CI/CD environments
 def getVersionFromGitCI() {
-    def versionName = System.getenv('GITHUB_REF_NAME') ?: System.getenv('TAG_NAME')
+    // GITHUB_REF_NAME is only a version on tag builds; on PRs it's e.g. "27/merge"
+    def tagRefName = System.getenv('GITHUB_REF_TYPE') == 'tag' ? System.getenv('GITHUB_REF_NAME') : null
+    def versionName = tagRefName ?: System.getenv('TAG_NAME')
 
     if (versionName && versionName.startsWith('v')) {
         versionName = versionName.substring(1)
