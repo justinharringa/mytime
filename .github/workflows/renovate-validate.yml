@@ -1,0 +1,38 @@
+name: Renovate Config Validation
+
+# A malformed renovate.json does not fail loudly: Renovate logs a config error
+# on its side and opens no PRs, which looks exactly like "nothing to update".
+# So the config is validated here, on every change to it, the way knuckles does.
+#
+# Not cached: `npx --package renovate` resolves the newest release on every
+# run, and Renovate ships several a day, so a cache would miss on nearly every
+# run; pinning the version to make it hit would have Renovate open a bump PR
+# for its own validator several times a day.
+on:
+  pull_request:
+    paths:
+      - renovate.json
+      - .github/workflows/renovate-validate.yml
+  push:
+    branches: [main]
+    paths:
+      - renovate.json
+      - .github/workflows/renovate-validate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: renovate.json (config validator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Validate renovate.json
+        # Parses the config and checks it against the current Renovate schema,
+        # including preset names and packageRules keys. `--strict` also fails
+        # on deprecated options rather than warning.
+        run: npx --yes --package renovate -- renovate-config-validator --strict renovate.json

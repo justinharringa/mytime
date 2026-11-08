@@ -1,0 +1,103 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": [
+    "HOUSE BASELINE. The top-level keys down to `vulnerabilityAlerts` are the same baseline knuckles, recife-nodes and untappd-backup carry, copied rather than extended from a shared preset on purpose: the shared part is a dozen lines, most of them Renovate defaults restated, and a preset repo would add a second place a config error can silently stop Renovate (an unresolvable preset is a config error, and Renovate reports a config error by opening no PRs). Everything below `packageRules` is this repo's own.",
+    "PRINCIPLE (from knuckles, 2026-08-16): no setting in this file may turn 'update available' into 'no PR'. Every knob must delay or annotate an update, never suppress it, because Renovate reports a suppressed update exactly like a non-existent one: the Dependency Dashboard parks it under 'Pending Status Checks' or 'Rate-Limited' and nothing turns red. So: no `schedule` windows on packageRules (Renovate's end-of-run branch prune deletes an out-of-window branch and the grouped PR with it), `prConcurrentLimit` and `prHourlyLimit` 0 (the onboarding default of 2 PRs/hour would have queued the backlog silently), no `minimumReleaseAge` (Maven Central, the Gradle plugin portal and services.gradle.org do report release timestamps, so a soak would work here, unlike knuckles' OCI charts; it is left off because this app ships by hand and the review is the soak), and no `enabled: false`. Batch with `groupName`, never with `schedule`.",
+    "REBASE POLICY (from knuckles and recife-nodes, 2026-09-07): `rebaseWhen: auto`, never `behind-base-branch`. With no automerge rules and no ruleset requiring up-to-date branches, `auto` resolves to `conflicted` here, so an open Renovate PR is force-pushed (and the Android build re-run, ~10 billed minutes each) only when it actually conflicts; the push-to-main run validates the merged tree. To keep one PR current while reviewing it, add the `keep-updated` label; to rebase before merging, tick that PR's rebase box, not the Dependency Dashboard's 'rebase all open PRs' box.",
+    "AUTOMERGE: off everywhere, deliberately, until `main` has a ruleset that requires the `build` job (android-build.yml) and the repo setting `allow_auto_merge` is on. Today neither exists, so nothing on GitHub would gate a merge, and knuckles' `platformAutomerge: true` transport cannot be used (GitHub native auto-merge needs a protection rule to wait on). When that ruleset exists, the GitHub Actions group below is the first candidate, as in knuckles: pinned by digest, exercised by the PR build, minor/patch/digest only. Mirror knuckles' rule and flip `platformAutomerge` to true at the same time; do not turn automerge on with `platformAutomerge: false` and no ruleset, because Renovate's own API merge would then merge on a green `build` check with nothing requiring that check."
+  ],
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "timezone": "America/Los_Angeles",
+  "schedule": ["at any time"],
+  "labels": ["dependencies", "renovate"],
+  "assignees": ["justinharringa"],
+  "prConcurrentLimit": 0,
+  "prHourlyLimit": 0,
+  "semanticCommits": "enabled",
+  "commitMessagePrefix": "chore:",
+  "commitMessageAction": "update",
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "to {{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{#if isMajor}}v{{newMajor}}{{else}}{{#if isSingleVersion}}v{{newVersion}}{{else}}{{newValue}}{{/if}}{{/if}}{{/if}}",
+  "separateMajorMinor": true,
+  "separateMinorPatch": false,
+  "prCreation": "immediate",
+  "automerge": false,
+  "platformAutomerge": false,
+  "rebaseWhen": "auto",
+  "keepUpdatedLabel": "keep-updated",
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"]
+  },
+  "packageRules": [
+    {
+      "description": "The Gradle wrapper (gradle/wrapper/gradle-wrapper.properties). Its own PR, never grouped with the Android Gradle Plugin: the two have a compatibility matrix (each AGP release names the minimum Gradle it needs, https://developer.android.com/build/releases/gradle-plugin#updating-gradle), so a Gradle bump should be reviewable on its own and an AGP bump should say which Gradle it needs. The PR body note is the reminder that README.md points at this file for the running version.",
+      "matchManagers": ["gradle-wrapper"],
+      "groupName": "Gradle wrapper",
+      "commitMessageTopic": "Gradle wrapper",
+      "addLabels": ["gradle"],
+      "prBodyNotes": [
+        "Gradle and the Android Gradle Plugin have a compatibility matrix: check the new Gradle is supported by the AGP pinned in `build.gradle` before merging (https://developer.android.com/build/releases/gradle-plugin#updating-gradle)."
+      ]
+    },
+    {
+      "description": "The Android Gradle Plugin (`id 'com.android.application' version '…'` in build.gradle, resolved through google() per settings.gradle's pluginManagement). Its own PR for the same compatibility reason as the wrapper rule above. AGP majors also move the minimum JDK and can drop Gradle DSL that the modules use, which is why majors stay manual (the generic major rule below adds the label and the reviewer).",
+      "matchManagers": ["gradle"],
+      "matchDepNames": ["com.android.application"],
+      "groupName": "Android Gradle Plugin",
+      "commitMessageTopic": "Android Gradle Plugin",
+      "addLabels": ["gradle"],
+      "prBodyNotes": [
+        "Check the release's minimum Gradle version against `gradle/wrapper/gradle-wrapper.properties` (https://developer.android.com/build/releases/gradle-plugin). If the wrapper also needs a bump, merge the Gradle wrapper PR first."
+      ]
+    },
+    {
+      "description": "Guava ships every release twice, as `-android` and `-jre`, and this app pins the `-android` flavour in both modules. Renovate's default maven versioning sorts those suffixes as plain qualifiers, where `jre` > `android`, so on 2026-11-08 a local `renovate --platform=local --dry-run=lookup` proposed 33.7.1-android -> 33.8.0-jre while 33.8.0-android sat on Maven Central beside it. That is the flavour swap Guava's own release policy warns against (the jre flavour assumes Java 8+ library APIs Android lacks). This is the regex versioning Renovate's own docs give for exactly this package: the suffix is captured as `compatibility`, which an update is never allowed to change, so Renovate now offers only `-android` releases. Not a suppression: every `-android` release is still proposed, and the `guava-monorepo` preset still lands both modules' pins in one PR.",
+      "matchManagers": ["gradle"],
+      "matchDepNames": ["com.google.guava:guava"],
+      "versioning": "regex:^(?<major>\\d+)(\\.(?<minor>\\d+))?(\\.(?<patch>\\d+))?(-(?<compatibility>.*))?$"
+    },
+    {
+      "description": "Test-only dependencies (JUnit, Robolectric, androidx.test) in one PR. They are exercised by the same `./gradlew test` run in android-build.yml and nothing about them ships in the app. Robolectric is the one to read notes for: each release names the Android SDK levels it supports, and `compileSdk` in mytime/build.gradle has to be inside that set or every Robolectric test fails to boot the framework.",
+      "matchManagers": ["gradle"],
+      "matchDepNames": [
+        "junit:junit",
+        "org.robolectric:robolectric",
+        "androidx.test:core"
+      ],
+      "groupName": "Test dependencies",
+      "commitMessageTopic": "Test dependencies",
+      "addLabels": ["tests"]
+    },
+    {
+      "description": "Group all GitHub Actions bumps into one PR, pinned to commit digests by `helpers:pinGitHubActionDigests` (a tag can be moved; a digest cannot). Not automerged yet: see AUTOMERGE at the top. Note release.yml has no pull_request trigger, so an Actions bump that only release.yml uses (softprops/action-gh-release) is first exercised by the next tag push, not by the PR build; that is visible, not silent, because the release workflow fails in front of whoever tagged.",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions",
+      "commitMessageTopic": "GitHub Actions",
+      "addLabels": ["github-actions"]
+    },
+    {
+      "description": "The JDK that actions/setup-java installs (`java-version:` in both workflows, which Renovate reads as the `java-jdk` dependency with depType `uses-with`). Kept out of the GitHub Actions group and kept manual: build.gradle requires JDK 21 or newer for the Robolectric framework classes and compiles the app to Java 17, README.md states the JDK, and AGP certifies specific JDK majors, so a JDK bump is a build-toolchain decision rather than an Actions bump. ANNOTATE, never suppress: this stays enabled so the dashboard shows the drift.",
+      "matchManagers": ["github-actions"],
+      "matchDepNames": ["java-jdk"],
+      "groupName": "JDK (setup-java)",
+      "commitMessageTopic": "JDK",
+      "addLabels": ["toolchain"],
+      "prBodyNotes": [
+        "A JDK bump touches more than the workflows: the JDK guard in `build.gradle`, the **Build Requirements** section of `README.md`, and AGP's supported-JDK list (https://developer.android.com/build/jdks). Prefer LTS releases."
+      ]
+    },
+    {
+      "description": "Major version updates require manual review (same rule as knuckles).",
+      "matchUpdateTypes": ["major"],
+      "labels": ["dependencies", "major-update", "renovate"],
+      "reviewers": ["justinharringa"],
+      "prPriority": 10
+    }
+  ]
+}

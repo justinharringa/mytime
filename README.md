@@ -13,8 +13,10 @@ A simple Android time tracking application built with Java.
 
 - **JDK**: 21 (LTS). The build stops with a clear error on older JDKs. Android Studio's bundled JDK works; on the command line, point `JAVA_HOME` at a JDK 21. The app itself still compiles to Java 17 bytecode.
 - **Android SDK**: API 36 (Android 16)
-- **Gradle**: 9.8.0 (via the wrapper)
-- **Android Gradle Plugin**: 9.4.1
+- **Gradle**: the version pinned in `gradle/wrapper/gradle-wrapper.properties` (use the wrapper)
+- **Android Gradle Plugin**: the version pinned in the root `build.gradle`
+
+Both are bumped by Renovate, which is why this list names the file rather than a number that would go stale on the next merge.
 
 ## Local Development
 
@@ -104,6 +106,20 @@ To set up Play App Signing:
 - **Push**: Triggers on pushes to `main` branch
 - **Pull Request**: Triggers on PRs to `main` branch
 - **Manual**: Can be triggered manually via GitHub Actions UI
+
+### 🔄 **Renovate Config Validation** (`renovate-validate.yml`)
+
+**Triggers:** Pull Requests and pushes to `main` that touch `renovate.json`
+
+- Runs `renovate-config-validator --strict` against `renovate.json`. A malformed config does not fail loudly on Renovate's side (it just opens no PRs), so it is checked here.
+
+## Dependency Updates
+
+[Renovate](https://docs.renovatebot.com/) (the Mend-hosted GitHub App) opens the dependency PRs; `renovate.json` at the repository root is the config and explains each rule in its `description` fields. In short:
+
+- **Gradle wrapper**, **Android Gradle Plugin**, **Test dependencies** (JUnit, Robolectric, androidx.test), **GitHub Actions** (pinned to commit digests) and the **JDK** that `setup-java` installs each get their own PR, so a bump can be reviewed against the thing it is coupled to (the AGP ↔ Gradle compatibility matrix, Robolectric's supported SDK levels, the JDK guard in `build.gradle`).
+- Everything is **manual review**; nothing automerges until `main` has a ruleset requiring the `build` job. The config says how to turn it on.
+- No schedule windows and no PR limits, on purpose: an update Renovate holds back is reported identically to one that does not exist. The Dependency Dashboard issue lists everything Renovate sees.
 
 ## Development Workflow
 
