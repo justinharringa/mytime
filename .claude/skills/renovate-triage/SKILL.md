@@ -55,9 +55,8 @@ gh api "repos/$R/pulls?state=open&per_page=50" \
   --jq '.[] | "#\(.number) \(.user.login) [\([.labels[].name]|join(","))] \(.head.sha[0:7]) \(.title)"'
 ```
 
-The Dependency Dashboard is the open issue titled `Dependency Dashboard`, by
-`renovate[bot]`. Find it by title; its number was not known when this skill
-was written.
+The Dependency Dashboard is #39 (`issue_read`, or
+`gh api repos/$R/issues/39 --jq .body`).
 
 **Do not filter on the `renovate` label.** Security PRs from
 `vulnerabilityAlerts` carry `security` instead. A PR from `dependabot[bot]`
@@ -75,21 +74,29 @@ its own PR, labelled `major-update`.
 
 | Bucket | Recognise by | Triage does |
 |---|---|---|
-| **Ask first** | any `major-update` PR; the **JDK (setup-java)** group at any version; **Android Gradle Plugin minor** (9.4 → 9.5); any PR that bumps `softprops/action-gh-release` (release-only, never exercised by a PR); a Renovate config-migration PR (`renovate.json` edits); any PR touching a file other than the ones listed in Phase 3 | Gather the evidence (Phase 2), then notify. Do not merge |
-| **Candidate LOW RISK** | **Gradle wrapper** minor or patch; **Android Gradle Plugin** patch; **Guava** minor or patch (always `-android`); **Test dependencies** minor or patch (JUnit, Robolectric, androidx.test); **GitHub Actions** digest pins, minor or patch, for actions that `android-build.yml` runs; `security` PRs | Apply the rubric |
+| **Ask first** | any `major-update` PR (all action majors arrive as one grouped `GitHub Actions (major)` PR); the **JDK (setup-java)** group at any version; **Android Gradle Plugin minor** (9.4 → 9.5); any PR that changes the **version** of `softprops/action-gh-release` (release-only, never exercised by a PR); a Renovate config-migration PR (`renovate.json` edits); any PR touching a file other than the ones listed in Phase 3 | Gather the evidence (Phase 2), then notify. Do not merge |
+| **Candidate LOW RISK** | **Gradle wrapper** minor or patch; **Android Gradle Plugin** patch; **Guava** minor or patch (always `-android`); **Test dependencies** minor or patch (JUnit, Robolectric, androidx.test); **GitHub Actions** `Pin dependencies` and digest refreshes (the version comment stays the same, so behaviour does not change, including for the release-only action); `security` PRs | Apply the rubric |
 
 Why AGP minors are Ask first while patches are candidates: a minor can raise
 the minimum Gradle, deprecate DSL the modules use, and ships a new R8 that no
 PR check exercises. A patch keeps all three.
 
-Expected first wave (from a local `renovate --dry-run=lookup` on 2026-11-08 and
-the onboarding PR #31): a digest pin of every action; Gradle wrapper 9.8.0 →
-9.9.0, AGP 9.4.1 → 9.5.1 and Guava 33.7.1-android → 33.8.0-android (candidates,
-except AGP: minor, so Ask first); majors for `actions/checkout`,
-`actions/setup-java`, `actions/cache`, `actions/upload-artifact`,
-`softprops/action-gh-release` and the JDK (25), all Ask first. The `@v4`-style
-action pins move only by major, so after the digest pin lands, their stream is
-digest refreshes plus majors.
+The first wave, opened 2026-11-09 within minutes of `renovate.json` landing,
+classifies as:
+
+| PR | Bucket | Why |
+|---|---|---|
+| #35 Pin dependencies | Candidate | digest pins at the current `@v4`/`@v1`, both workflows |
+| #37 Guava 33.8.0 | Candidate | minor, `-android` in both modules |
+| #38 Gradle wrapper 9.9.0 | Candidate | minor |
+| #36 AGP 9.5.1 | Ask first | AGP minor |
+| #34 JDK 25 | Ask first | JDK group |
+| #33 GitHub Actions (major) | Ask first | checkout v7, setup-java v6, cache v6, upload-artifact v7, softprops v3 |
+
+The actions are pinned to floating majors (`@v4`), so after #35 their stream is
+digest refreshes plus majors; minor and patch never arrive for them. #33 and #35
+edit the same `uses:` lines, so whichever merges second gets rebased by
+Renovate (`rebaseWhen: auto` rebases a conflicted PR).
 
 ## Phase 2: Read the notes
 
@@ -145,14 +152,20 @@ that failed.
       (and `gradle-wrapper.jar`, `gradlew`, `gradlew.bat` on a wrapper bump),
       the root `build.gradle` plugin line, the `dependencies` blocks of
       `mytime/build.gradle` and `libraries/timecalc/build.gradle`, or `uses:`
-      lines in `.github/workflows/android-build.yml`; and they match the title
+      lines in either workflow. A `uses:` change in `release.yml` qualifies
+      only when its `# vX` comment is unchanged (a pin or digest refresh); a
+      version change there is Ask first. Every change matches the title
 - [ ] One commit, authored by Renovate; no hand edits on the branch
 - [ ] `main`'s latest `Android Build & Test` push run is green, so a merge
       cannot hide an existing breakage
 
-A wrapper PR legitimately rewrites `gradlew`, `gradlew.bat` and the wrapper jar
-(Renovate runs `gradle wrapper`). Check the jar's change is the wrapper upgrade
-and nothing else: the PR body says so, and `build` ran with the new jar.
+A wrapper PR from the hosted Renovate edits only
+`gradle-wrapper.properties` (#38: one line, `distributionUrl`). It does not
+regenerate `gradlew`, `gradlew.bat` or the wrapper jar. That is acceptable: the
+jar only downloads and launches the distribution the properties file names, and
+`build` ran on the new distribution. If a wrapper PR **does** change the jar,
+Ask first: a binary changed by a bot needs a human to confirm it came from
+`gradle wrapper`.
 
 **A red `build` is not always the bump's fault.** Read the failing step's log
 (`get_job_logs`) before blaming the PR. `Set up Android SDK` downloads from
@@ -229,9 +242,7 @@ commits ahead of the release". Message shape:
 
 | Observation | Why it's fine |
 |---|---|
-| Onboarding PR #31 ("Configure Renovate") still open | Renovate closes it on its next run once `renovate.json` is on `main`. If it is still open a day later, mention it once; it is not a dependency PR |
 | `main` ahead of the latest release tag | Normal; the owner releases in batches |
-| Dashboard lists the `ubuntu` runner as "invalid version" | `runs-on: ubuntu-latest` is a label, not a version; Renovate skips it by design |
 
 ## Report
 
@@ -242,9 +253,11 @@ tag: `gh api repos/$R/compare/<tag>...main --jq .ahead_by`.
 
 ## Known characteristics
 
-- **2026-11-09, skill drafted** before Renovate was active (it activates when
-  the PR adding `renovate.json` merges). Latest release v1.1.7 (2026-09-25).
-  The owner merges PRs with merge commits. A local dry run on 2026-11-08 caught
+- **2026-11-09, skill drafted.** `renovate.json` landed in #32 at 01:33Z;
+  Renovate closed onboarding PR #31 a second later, opened Dashboard #39 and
+  PRs #33–#38 (the table in Phase 1), and the merge commit's push runs were
+  green. Latest release v1.1.7 (2026-09-25). The owner merges PRs with merge
+  commits. A local dry run on 2026-11-08 caught
   Renovate's default maven versioning proposing Guava `33.8.0-jre` for an
   `-android` pin; `renovate.json`'s Guava rule fixes that, so a Guava PR whose
   new version is not `-android` means that rule stopped matching: Ask first.
