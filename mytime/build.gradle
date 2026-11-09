@@ -163,7 +163,7 @@ base {
 
 dependencies {
     // Guava for immutable collections and utilities
-    implementation 'com.google.guava:guava:33.7.1-android'
+    implementation 'com.google.guava:guava:33.8.0-android'
 
     // RecyclerView - not used (using ListView instead for minimal method count)
     // implementation 'androidx.recyclerview:recyclerview:1.3.2'
