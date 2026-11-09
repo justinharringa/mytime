@@ -120,6 +120,7 @@ To set up Play App Signing:
 - **Gradle wrapper**, **Android Gradle Plugin**, **Test dependencies** (JUnit, Robolectric, androidx.test), **GitHub Actions** (pinned to commit digests) and the **JDK** that `setup-java` installs each get their own PR, so a bump can be reviewed against the thing it is coupled to (the AGP ↔ Gradle compatibility matrix, Robolectric's supported SDK levels, the JDK guard in `build.gradle`).
 - Everything is **manual review**; nothing automerges until `main` has a ruleset requiring the `build` job. The config says how to turn it on.
 - No schedule windows and no PR limits, on purpose: an update Renovate holds back is reported identically to one that does not exist. The Dependency Dashboard issue lists everything Renovate sees.
+- The daily Renovate triage routine merges the low-risk PRs and notifies about the rest, following `.claude/skills/renovate-triage/SKILL.md`. That file is the authority on what may be merged without a human.
 
 ## Development Workflow
 
