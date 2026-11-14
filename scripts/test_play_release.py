@@ -26,47 +26,94 @@ notes = load("play-release-notes")
 TEMPLATE = (SCRIPTS.parent / ".github" / "pull_request_template.md").read_text()
 
 
-class ExtractNote(unittest.TestCase):
+def pr(title="A change", labels=(), body="", branch="feature"):
+    return {"head": {"ref": branch}, "title": title, "body": body, "labels": [{"name": n} for n in labels]}
+
+
+class SectionNote(unittest.TestCase):
     def test_sentence(self):
         body = "## Summary\nStuff.\n\n## Release note\nCheck-ins a minute apart are no longer dropped.\n\n## Testing\nran it"
-        self.assertEqual(notes.extract_note(body), "Check-ins a minute apart are no longer dropped.")
+        self.assertEqual(notes.section_note(body), "Check-ins a minute apart are no longer dropped.")
 
     def test_none_variants(self):
         for value in ["none", "None.", "`none`", "N/A", "- none"]:
             with self.subTest(value=value):
-                self.assertIsNone(notes.extract_note(f"## Release note\n{value}\n"))
+                self.assertIs(notes.section_note(f"## Release note\n{value}\n"), notes.NONE)
 
-    def test_untouched_template_is_missing(self):
-        with self.assertRaises(notes.MissingSection):
-            notes.extract_note(TEMPLATE)
+    def test_absent_or_untouched_template_is_no_override(self):
+        for body in [TEMPLATE, "## Summary\nNo note here", None, "## Release note\n\n## Testing\n"]:
+            with self.subTest(body=body):
+                self.assertIsNone(notes.section_note(body))
 
     def test_filled_template(self):
         body = TEMPLATE.replace("## Release note\n", "## Release note\nFaster startup.\n", 1)
-        self.assertEqual(notes.extract_note(body), "Faster startup.")
+        self.assertEqual(notes.section_note(body), "Faster startup.")
 
-    def test_no_section(self):
-        with self.assertRaises(notes.MissingSection):
-            notes.extract_note("## Summary\nNo note here")
-        with self.assertRaises(notes.MissingSection):
-            notes.extract_note(None)
-
-    def test_heading_variants_and_crlf(self):
-        self.assertEqual(notes.extract_note("### Release notes\r\nFixes a crash.\r\n"), "Fixes a crash.")
-
-    def test_wrapped_lines_join(self):
-        self.assertEqual(notes.extract_note("## Release note\n- Fixes a crash\n  on rotation.\n"), "Fixes a crash on rotation.")
+    def test_heading_variants_crlf_and_wrapping(self):
+        self.assertEqual(notes.section_note("### Release notes\r\n- Fixes a crash\r\n  on rotation.\r\n"), "Fixes a crash on rotation.")
 
     def test_section_ends_at_next_heading(self):
-        self.assertEqual(notes.extract_note("## Release note\nA.\n# Other\nB."), "A.")
+        self.assertEqual(notes.section_note("## Release note\nA.\n# Other\nB."), "A.")
+
+
+class Classify(unittest.TestCase):
+    def test_label_makes_the_title_a_note(self):
+        for label in ["enhancement", "bug"]:
+            with self.subTest(label=label):
+                self.assertEqual(notes.classify(pr("Clearer message when a check-in is skipped.", [label]))[0],
+                                 "Clearer message when a check-in is skipped")
+
+    def test_conventional_prefix_is_stripped_from_a_title(self):
+        self.assertEqual(notes.classify(pr("fix(ui)!: check-ins no longer vanish", ["bug"]))[0], "Check-ins no longer vanish")
+
+    def test_no_label_is_maintenance(self):
+        self.assertEqual(notes.classify(pr("Fix generated release notes", ["tests"])),
+                         (None, "maintenance (no enhancement/bug label)"))
+
+    def test_section_overrides_the_title_and_opts_in_without_a_label(self):
+        body = "## Release note\nCheck-ins one minute apart are no longer skipped as duplicates."
+        expected = "Check-ins one minute apart are no longer skipped as duplicates"
+        self.assertEqual(notes.classify(pr("Treat only a check-in in the same minute as a duplicate", ["bug"], body))[0], expected)
+        self.assertEqual(notes.classify(pr("Treat only a check-in in the same minute as a duplicate", [], body))[0], expected)
+
+    def test_none_opts_out_even_with_a_label(self):
+        self.assertIsNone(notes.classify(pr("Speed up the build", ["enhancement"], "## Release note\nnone"))[0])
+
+    def test_renovate_is_maintenance_whatever_it_says(self):
+        self.assertIsNone(notes.classify(pr("chore: update x", ["bug"], "## Release note\nhi", "renovate/x"))[0])
+
+
+class Check(unittest.TestCase):
+    def env(self, **kw):
+        base = {"PR_TITLE": "A change", "PR_BODY": "", "PR_LABELS": "[]", "PR_BRANCH": "feature"}
+        base.update(kw)
+        return base
+
+    def test_unlabelled_passes_and_says_behind_the_scenes(self):
+        status, preview = notes.check(self.env())
+        self.assertEqual(status, 0)
+        self.assertIn("behind-the-scenes", preview)
+
+    def test_labelled_previews_the_bullet(self):
+        status, preview = notes.check(self.env(PR_TITLE="Faster startup", PR_LABELS='["enhancement"]'))
+        self.assertEqual(status, 0)
+        self.assertIn("> • Faster startup", preview)
+
+    def test_too_long_fails(self):
+        status, _ = notes.check(self.env(PR_TITLE="x" * 501, PR_LABELS='["bug"]'))
+        self.assertEqual(status, 1)
+
+    def test_empty_title_note_fails(self):
+        status, _ = notes.check(self.env(PR_TITLE="fix: ", PR_LABELS='["bug"]'))
+        self.assertEqual(status, 1)
 
 
 class FormatAndNumbers(unittest.TestCase):
     def test_user_notes_only(self):
-        self.assertEqual(notes.format_notes(["One.", "Two"], False, "v1.0.0"), "• One\n• Two")
+        self.assertEqual(notes.format_notes(["One", "Two"], False, "v1.0.0"), "• One\n• Two")
 
     def test_one_maintenance_line_however_many_maintenance_prs(self):
-        text = notes.format_notes(["Fixes a crash."], True, "v1.2.3")
-        lines = text.split("\n")
+        lines = notes.format_notes(["Fixes a crash"], True, "v1.2.3").split("\n")
         self.assertEqual(lines[0], "• Fixes a crash")
         self.assertEqual(len(lines), 2)
         self.assertIn(lines[1].removeprefix("• "), notes.MAINTENANCE)
@@ -97,6 +144,8 @@ class FormatAndNumbers(unittest.TestCase):
 class Collect(unittest.TestCase):
     """Replays the v1.1.6..v1.1.7 PRs through collect() in a scratch repo."""
 
+    PRS = [(26, "fix-release-notes"), (27, "modernize-gradle"), (29, "same-minute-duplicates"), (43, "renovate/test-dependencies")]
+
     def setUp(self):
         self.repo = tempfile.TemporaryDirectory()
         self.cwd = os.getcwd()
@@ -108,7 +157,7 @@ class Collect(unittest.TestCase):
         commit = lambda msg: run("commit", "-q", "--allow-empty", "-m", msg)  # noqa: E731
         commit("start")
         run("tag", "v1.1.6")
-        for number, branch in [(26, "fix-release-notes"), (27, "modernize-gradle"), (29, "same-minute-duplicates"), (43, "renovate/test-dependencies")]:
+        for number, branch in self.PRS:
             commit(f"Merge pull request #{number} from justinharringa/{branch}")
         run("tag", "v1.1.7")
 
@@ -116,31 +165,29 @@ class Collect(unittest.TestCase):
         os.chdir(self.cwd)
         self.repo.cleanup()
 
-    def test_only_user_facing_notes(self):
+    def test_v1_1_7_with_labels(self):
         prs = {
-            26: ("fix-release-notes", "## Release note\nnone"),
-            27: ("modernize-gradle", "Old PR body, written before the convention"),
-            29: ("same-minute-duplicates", "## Release note\nCheck-ins a minute apart are no longer dropped as duplicates."),
-            43: ("renovate/test-dependencies", "## Release note\nshould be skipped"),
+            26: pr("Fix generated release notes", [], "", "fix-release-notes"),
+            27: pr("Upgrade to Gradle 9 / AGP 9", ["gradle"], "", "modernize-gradle"),
+            29: pr("Treat only a check-in in the same minute as a duplicate", ["bug"],
+                   "## Release note\nCheck-ins one minute apart are no longer skipped as duplicates", "same-minute-duplicates"),
+            43: pr("chore: update Test dependencies to v4.18", ["renovate"], "", "renovate/test-dependencies"),
         }
-        fetch = lambda n: {"head": {"ref": prs[n][0]}, "body": prs[n][1]}  # noqa: E731
-        text, report = notes.collect("v1.1.7", fetch)
+        text, report = notes.collect("v1.1.7", prs.get)
         self.assertEqual(
             text,
-            "• Check-ins a minute apart are no longer dropped as duplicates\n• " + notes.maintenance_line("v1.1.7"),
+            "• Check-ins one minute apart are no longer skipped as duplicates\n• " + notes.maintenance_line("v1.1.7"),
         )
-        self.assertIn("#26: maintenance (none)", report)
-        self.assertIn("#27: maintenance, no note (no `## Release note` section)", report)
+        self.assertIn("#26: maintenance (no enhancement/bug label)", report)
         self.assertIn("#43: maintenance (renovate/test-dependencies)", report)
 
     def test_a_none_pr_alone_adds_the_maintenance_line(self):
-        fetch = lambda n: {"head": {"ref": "b"}, "body": "## Release note\n" + ("none" if n == 26 else f"Change {n}.")}  # noqa: E731
+        fetch = lambda n: pr(f"Change {n}", [] if n == 26 else ["enhancement"])  # noqa: E731
         text, _ = notes.collect("v1.1.7", fetch)
         self.assertEqual(text, "• Change 27\n• Change 29\n• Change 43\n• " + notes.maintenance_line("v1.1.7"))
 
     def test_no_maintenance_line_when_every_pr_is_user_facing(self):
-        fetch = lambda n: {"head": {"ref": "b"}, "body": f"## Release note\nChange {n}."}  # noqa: E731
-        text, _ = notes.collect("v1.1.7", fetch)
+        text, _ = notes.collect("v1.1.7", lambda n: pr(f"Change {n}", ["enhancement"]))
         self.assertEqual(text, "• Change 26\n• Change 27\n• Change 29\n• Change 43")
 
 

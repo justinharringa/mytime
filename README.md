@@ -67,16 +67,16 @@ This project uses trunk-based development with comprehensive GitHub Actions work
 **Triggers:** Push tags matching `v*` (e.g., `v1.1.0`)
 
 - Builds the signed release App Bundle (AAB)
-- Collects the Google Play "What's new" text from the `## Release note` section of each PR merged since the previous tag (`scripts/play-release-notes.py`)
+- Builds the Google Play "What's new" text from the PRs merged since the previous tag (`scripts/play-release-notes.py`): the title of each PR labelled `enhancement` or `bug` becomes a bullet
 - Creates the GitHub release with those notes plus the commit list, and attaches the AAB
 - Uploads the AAB, its R8 mapping and the notes to the Google Play **production track as a draft** (`scripts/play-publish.py`)
 - Only runs when you push a version tag
 
-### 📝 **Release Note Check** (`release-note.yml`)
+### 📝 **Release Note Preview** (`release-note.yml`)
 
-**Triggers:** Pull Requests (opened, edited, synchronized), except Renovate's
+**Triggers:** Pull Requests (opened, edited, synchronized, labelled, unlabelled), except Renovate's
 
-- Fails a PR whose body has no `## Release note` section (`.github/pull_request_template.md`). The section holds one user-facing line, or `none`, and becomes a Play "What's new" bullet unedited. `CLAUDE.md` says what makes a good one.
+- Shows in its job summary how the PR will appear in the Play "What's new" text: as its own bullet, or folded into the behind-the-scenes bullet. Fails only when the PR's note is empty or over Play's 500-character limit. `CLAUDE.md` says when to label a PR.
 
 ### 🔐 **Signing Configuration**
 
@@ -108,7 +108,13 @@ To set up Play App Signing:
 
 3. **Send it for review** in the Play Console (Publishing overview, or Production → the draft release). You can still edit the notes there first.
 
-If a PR's note needs fixing after it merged, edit that PR's description before tagging; the notes are read from the PR bodies at tag time. Each user-facing note is one `•` bullet. Everything else in the release (Renovate bumps, `none` PRs) is summed up in **one** extra bullet, a light-hearted take on "Behind-the-scenes updates" picked from `MAINTENANCE` in `scripts/play-release-notes.py` (seeded by the tag, so re-runs agree). For example:
+How the notes are built, per PR merged since the previous tag:
+
+- Labelled **`enhancement`** or **`bug`**: its title becomes a `•` bullet (any `type(scope):` prefix and trailing period dropped).
+- A **`## Release note`** section in the PR body replaces the title, for when the title is worded for developers. Writing one also counts without a label; `none` there keeps a labelled PR out.
+- Everything else, Renovate included, is summed up in **one** extra bullet: a light-hearted take on "Behind-the-scenes updates" from `MAINTENANCE` in `scripts/play-release-notes.py`, seeded by the tag so re-runs agree.
+
+Labels, titles and bodies are read from the GitHub API at tag time, so fix any of them on the merged PR before tagging. The release workflow's log lists how each PR was classified. For example:
 
 ```
 • Check-ins one minute apart are no longer skipped as duplicates

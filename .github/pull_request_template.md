@@ -4,18 +4,22 @@
 
 ## Release note
 <!--
-One line for the Google Play "What's new" text, written for someone who
-uses the app, not for a developer. At the next tag it becomes one bullet,
-as-is, beside the other PRs in that release (500 characters in total).
+Optional. Only matters if users will notice this change.
 
-Write `none` if a user would not notice the change: build, CI, tests, docs,
-refactors and dependency bumps are usually `none`. All of those together
-become a single "Behind-the-scenes updates"-style bullet, never one each.
+The Google Play "What's new" text is built at the next tag:
+- Label the PR `enhancement` or `bug` (a bug users can hit, not a CI fix) and
+  its title becomes one bullet.
+- Write a line here instead when the title is worded for developers. It
+  replaces the title, and counts even without a label. Write `none` to keep a
+  labelled PR out of the notes.
+- Everything else (most PRs: build, CI, tests, docs, refactors, dependency
+  bumps) is summed up in a single "Behind-the-scenes updates"-style bullet.
 
-Examples:
+Example: titled "Treat only a check-in in the same minute as a duplicate",
+labelled `bug`, with this section reading:
   Check-ins one minute apart are no longer skipped as duplicates
-  Clearer message when a check-in is skipped
-  none
+
+The `release-note` check's job summary shows how this PR will appear.
 -->
 
 ## Testing

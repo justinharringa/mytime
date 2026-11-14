@@ -32,7 +32,7 @@ PR merged to main ──(nothing ships)──▶ owner pushes tag vX.Y.Z
 |---|---|---|
 | `build` (Android Build & Test) | every PR and every push to `main` | `./gradlew build -x assembleRelease`, unit tests (Robolectric for `:mytime`, plain JUnit for `timecalc`), `scripts/check-version-info.sh`, JaCoCo reports, `assembleDebug`, `lint`. About 2 minutes |
 | `renovate.json (config validator)` (Renovate Config Validation) | PRs and pushes that touch `renovate.json` | `renovate-config-validator --strict` |
-| `release-note` (Release Note) | PRs, **skipped on `renovate/*` branches** | The PR body has a `## Release note` section. Skipped on every Renovate PR by design; a skip is not a failure |
+| `release-note` (Release Note) | PRs, **skipped on `renovate/*` branches** | Previews the PR's Google Play note. Skipped on every Renovate PR by design (Renovate PRs are always behind-the-scenes); a skip is not a failure |
 
 **Nothing enforces these.** `main` has no ruleset and no classic protection,
 and `allow_auto_merge` is off. GitHub will merge a red PR if asked, so

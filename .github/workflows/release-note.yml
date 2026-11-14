@@ -1,16 +1,17 @@
 name: Release Note
 
-# Every PR body needs a `## Release note` section (see
-# .github/pull_request_template.md): it becomes the Google Play "What's new"
-# text at the next tag, unedited. Catch a missing one here, while the author is
-# still looking at the PR, instead of at release time.
+# Previews how this PR will appear in the Google Play "What's new" text at the
+# next tag, in the job summary: as its own bullet (labelled `enhancement` or
+# `bug`, or a `## Release note` section in the body), or folded into the
+# release's single behind-the-scenes bullet. Fails only when the PR's note is
+# unusable (empty, or over Play's 500-character limit).
 #
-# `edited` re-runs the check when the PR description changes. The body is
+# Re-runs when the title, body or labels change. Title, body and labels are
 # passed through env, never interpolated into the script, because anyone who
-# can open a PR writes it.
+# can open a PR writes them.
 on:
   pull_request:
-    types: [opened, edited, reopened, synchronize]
+    types: [opened, edited, reopened, synchronize, labeled, unlabeled]
     branches: [main]
 
 permissions:
@@ -19,14 +20,17 @@ permissions:
 jobs:
   release-note:
     name: release-note
-    # Renovate's bumps are never user-facing and its bodies don't use the template.
+    # Renovate's bumps are always behind-the-scenes; nothing to preview.
     if: ${{ !startsWith(github.head_ref, 'renovate/') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Check the PR's release note
+      - name: Preview the PR's Google Play note
         env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          PR_BRANCH: ${{ github.head_ref }}
         run: python3 scripts/play-release-notes.py check
