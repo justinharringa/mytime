@@ -26,7 +26,8 @@ The `release-note` check fails a PR whose body has no such section.
 - Keep it short: all the notes of a release share Play's 500-character limit.
 - If you change the PR's behaviour after opening it, update the note too.
 
-Renovate PRs (`renovate/*` branches) are exempt and are never collected.
+Renovate PRs (`renovate/*` branches) are exempt from the check; they count
+toward the release's single behind-the-scenes bullet.
 
 ## Releasing is the owner's
 
