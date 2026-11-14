@@ -47,7 +47,7 @@ git push origin v1.1.2
 ## Workflow
 
 1. **Development**: Work on features in the main branch
-2. **Version Creation**: Use `./scripts/version.sh` to create a new version
+2. **Version Creation** (owner only: the tag it pushes uploads a signed bundle to the Play production track as a draft; an agent or scheduled session never runs it): `./scripts/version.sh` creates a new version
 3. **Automatic Release**: GitHub Actions automatically builds and releases when a tag is pushed
 4. **Distribution**: The AAB is attached to the GitHub Release and uploaded to Google Play as a draft production release; see the README's Release Process
 
