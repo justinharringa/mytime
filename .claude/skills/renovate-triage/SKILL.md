@@ -53,6 +53,25 @@ and `allow_auto_merge` is off. GitHub will merge a red PR if asked, so
 - **The Play upload** (`scripts/play-publish.py`). Its unit tests run in
   `build` against a fake API; the real API is first called at the next tag.
 
+## Preflight: what can this session reach?
+
+Run once, before Phase 0. A blocked host is an **environment gap**, not a
+property of any PR, and it reaches the owner as one line naming the host.
+
+```bash
+for h in developer.android.com \
+         docs.gradle.org \
+         raw.githubusercontent.com; do
+  printf '%-34s ' "$h"; curl -sS -m 12 -o /dev/null -w '%{http_code}\n' "https://$h/" 2>&1 | tail -1
+done
+```
+
+`000`, or `CONNECT tunnel failed, response 403`, means the egress allow list
+refuses the host; 2xx and 3xx are fine. **curl and WebFetch resolve
+differently** (on 2026-11-14 WebFetch failed with `ENOTFOUND` for a host that curl
+reached), so when WebFetch fails for a host, try curl before calling the notes
+unreachable.
+
 ## Phase 0: Inventory
 
 ```bash
@@ -244,6 +263,13 @@ Everything else is silent: merged LOW RISK PRs, routine holds, "`main` is N
 commits ahead of the release". Message shape:
 `mytime: <action needed> — #<n> <title>: <one-line evidence>`.
 
+**Also notify, and only this:**
+- **On Mondays (UTC), one line** `held >7 days: #<n>, #<n>, ...` for each PR that
+  has waited more than 7 days since its last change, so a parked PR comes back
+  weekly: not daily, and not never.
+- **An environment gap** from the Preflight, one line per blocked host:
+  `environment: <host> blocked, add it to the allow list`.
+
 ## Known false alarms
 
 | Observation | Why it's fine |
@@ -267,3 +293,10 @@ tag: `gh api repos/$R/compare/<tag>...main --jq .ahead_by`.
   Renovate's default maven versioning proposing Guava `33.8.0-jre` for an
   `-android` pin; `renovate.json`'s Guava rule fixes that, so a Guava PR whose
   new version is not `-android` means that rule stopped matching: Ask first.
+- **2026-11-14.** #43 (Robolectric 4.18, which drops SDK 23 while `compileSdk` is
+  36) and #44 (a `setup-java` digest refresh whose commit turns the Java problem
+  matcher off by default) merged one at a time, with `Android Build & Test` green
+  on each merge commit. #42 (Gradle wrapper 9.9.1) was held because it changes
+  `gradle-wrapper.jar`, per Phase 3. It had been open since 2026-11-10, so the
+  "opened or changed within 24h" rule meant it was never in a notification; the
+  Monday digest is there for that.
