@@ -76,7 +76,7 @@ This project uses trunk-based development with comprehensive GitHub Actions work
 
 **Triggers:** Pull Requests (opened, edited, synchronized), except Renovate's
 
-- Fails a PR whose body has no `## Release note` section (`.github/pull_request_template.md`). The section holds one user-facing sentence, or `none`, and becomes the Play "What's new" text unedited. `CLAUDE.md` says what makes a good one.
+- Fails a PR whose body has no `## Release note` section (`.github/pull_request_template.md`). The section holds one user-facing line, or `none`, and becomes a Play "What's new" bullet unedited. `CLAUDE.md` says what makes a good one.
 
 ### 🔐 **Signing Configuration**
 
@@ -108,7 +108,13 @@ To set up Play App Signing:
 
 3. **Send it for review** in the Play Console (Publishing overview, or Production → the draft release). You can still edit the notes there first.
 
-If a PR's note needs fixing after it merged, edit that PR's description before tagging; the notes are read from the PR bodies at tag time. A release whose PRs all say `none` (e.g. dependency bumps only) gets a generic "Maintenance update" line.
+If a PR's note needs fixing after it merged, edit that PR's description before tagging; the notes are read from the PR bodies at tag time. Each user-facing note is one `•` bullet. Everything else in the release (Renovate bumps, `none` PRs) is summed up in **one** extra bullet, a light-hearted take on "Behind-the-scenes updates" picked from `MAINTENANCE` in `scripts/play-release-notes.py` (seeded by the tag, so re-runs agree). For example:
+
+```
+• Check-ins one minute apart are no longer skipped as duplicates
+• Clearer message when a check-in is skipped
+• Tightened a few bolts behind the scenes
+```
 
 ### 🤖 **Google Play publishing (one-time setup)**
 

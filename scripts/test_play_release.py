@@ -61,10 +61,28 @@ class ExtractNote(unittest.TestCase):
 
 
 class FormatAndNumbers(unittest.TestCase):
-    def test_format(self):
-        self.assertEqual(notes.format_notes([]), notes.FALLBACK)
-        self.assertEqual(notes.format_notes(["One."]), "One.")
-        self.assertEqual(notes.format_notes(["One.", "Two."]), "• One.\n• Two.")
+    def test_user_notes_only(self):
+        self.assertEqual(notes.format_notes(["One.", "Two"], False, "v1.0.0"), "• One\n• Two")
+
+    def test_one_maintenance_line_however_many_maintenance_prs(self):
+        text = notes.format_notes(["Fixes a crash."], True, "v1.2.3")
+        lines = text.split("\n")
+        self.assertEqual(lines[0], "• Fixes a crash")
+        self.assertEqual(len(lines), 2)
+        self.assertIn(lines[1].removeprefix("• "), notes.MAINTENANCE)
+
+    def test_maintenance_only_release(self):
+        text = notes.format_notes([], True, "v1.1.8")
+        self.assertEqual(text.count("\n"), 0)
+        self.assertIn(text.removeprefix("• "), notes.MAINTENANCE)
+        self.assertEqual(notes.format_notes([], False, "v1.1.8"), text)
+
+    def test_pick_is_stable_per_tag_and_varies_across_tags(self):
+        self.assertEqual(notes.maintenance_line("v1.1.8"), notes.maintenance_line("v1.1.8"))
+        self.assertGreater(len({notes.maintenance_line(f"v1.{n}.0") for n in range(40)}), 3)
+
+    def test_every_phrasing_fits_comfortably(self):
+        self.assertTrue(all(len(line) <= 80 for line in notes.MAINTENANCE))
 
     def test_pr_numbers_from_merge_and_squash_subjects_oldest_first(self):
         subjects = [
@@ -107,9 +125,23 @@ class Collect(unittest.TestCase):
         }
         fetch = lambda n: {"head": {"ref": prs[n][0]}, "body": prs[n][1]}  # noqa: E731
         text, report = notes.collect("v1.1.7", fetch)
-        self.assertEqual(text, "Check-ins a minute apart are no longer dropped as duplicates.")
-        self.assertIn("#27: no note (no `## Release note` section)", report)
-        self.assertIn("#43: skipped (renovate/test-dependencies)", report)
+        self.assertEqual(
+            text,
+            "• Check-ins a minute apart are no longer dropped as duplicates\n• " + notes.maintenance_line("v1.1.7"),
+        )
+        self.assertIn("#26: maintenance (none)", report)
+        self.assertIn("#27: maintenance, no note (no `## Release note` section)", report)
+        self.assertIn("#43: maintenance (renovate/test-dependencies)", report)
+
+    def test_a_none_pr_alone_adds_the_maintenance_line(self):
+        fetch = lambda n: {"head": {"ref": "b"}, "body": "## Release note\n" + ("none" if n == 26 else f"Change {n}.")}  # noqa: E731
+        text, _ = notes.collect("v1.1.7", fetch)
+        self.assertEqual(text, "• Change 27\n• Change 29\n• Change 43\n• " + notes.maintenance_line("v1.1.7"))
+
+    def test_no_maintenance_line_when_every_pr_is_user_facing(self):
+        fetch = lambda n: {"head": {"ref": "b"}, "body": f"## Release note\nChange {n}."}  # noqa: E731
+        text, _ = notes.collect("v1.1.7", fetch)
+        self.assertEqual(text, "• Change 26\n• Change 27\n• Change 29\n• Change 43")
 
 
 class FakePlay(http.server.BaseHTTPRequestHandler):

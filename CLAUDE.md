@@ -11,12 +11,16 @@ Fill in the `## Release note` section of `.github/pull_request_template.md`.
 previous tag (`scripts/play-release-notes.py`) and uploads them with the bundle.
 The `release-note` check fails a PR whose body has no such section.
 
-- Write **one sentence for a person using the app**: what they will notice.
-  "Check-ins a minute apart are no longer dropped as duplicates", not "Treat
-  only a check-in in the same minute as a duplicate".
+- Write **one line for a person using the app**: what they will notice.
+  "Check-ins one minute apart are no longer skipped as duplicates", not "Treat
+  only a check-in in the same minute as a duplicate". It becomes one `•`
+  bullet; a trailing period is dropped.
 - Write **`none`** when a user would not notice: build, CI, tests, docs,
   refactors, dependency bumps, this file. Most PRs here are `none`, and that is
-  the right answer, not a gap.
+  the right answer, not a gap: every `none` and Renovate PR in a release is
+  summed up in **one** light-hearted "behind-the-scenes" bullet, picked from
+  `MAINTENANCE` in `scripts/play-release-notes.py`. Never write a note that
+  only says "maintenance" or "updated dependencies"; that is what `none` is for.
 - No PR numbers, class names, SDK levels or jargon. Play shows plain text, so
   no Markdown either.
 - Keep it short: all the notes of a release share Play's 500-character limit.

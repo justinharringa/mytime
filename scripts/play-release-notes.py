@@ -20,6 +20,7 @@ Stdlib only, so it runs on a stock runner with no install step.
 
 import json
 import os
+import random
 import re
 import subprocess
 import sys
@@ -28,10 +29,20 @@ import urllib.request
 # Google Play rejects "What's new" text over 500 characters per language.
 PLAY_LIMIT = 500
 
-# Sent when no PR in the release has a note, e.g. a release of dependency
-# bumps only. The release lands in Play as a draft, so this can still be
-# edited there before sending it for review.
-FALLBACK = "Maintenance update: library and build tool upgrades."
+# Everything that is not user-facing (Renovate bumps, `none` PRs, PRs from
+# before the convention) is summed up in ONE of these lines, never one line per
+# PR. The pick is seeded by the tag, so a re-run of release.yml produces the
+# same text and the GitHub Release and Play agree.
+MAINTENANCE = [
+    "Behind-the-scenes updates",
+    "Some housekeeping under the hood",
+    "Oiled the gears and wound the clock",
+    "Fresh batteries in the behind-the-scenes clockwork",
+    "A little tidying up while nobody was watching the clock",
+    "Routine maintenance to keep everything ticking",
+    "Tightened a few bolts behind the scenes",
+    "Swept the workshop floor behind the scenes",
+]
 
 # Branches whose PRs never carry a note. Renovate's are dependency bumps and
 # its PR bodies do not use the template.
@@ -81,13 +92,16 @@ def extract_note(body):
     return text
 
 
-def format_notes(notes):
-    """One note reads as a sentence; several become a bulleted list."""
-    if not notes:
-        return FALLBACK
-    if len(notes) == 1:
-        return notes[0]
-    return "\n".join(f"• {note}" for note in notes)
+def maintenance_line(tag):
+    return random.Random(tag).choice(MAINTENANCE)
+
+
+def format_notes(notes, has_maintenance, tag):
+    """A bullet per user-facing note, plus at most one maintenance bullet."""
+    lines = [note.rstrip(".") for note in notes]
+    if has_maintenance or not lines:
+        lines.append(maintenance_line(tag))
+    return "\n".join(f"• {line}" for line in lines)
 
 
 def pr_numbers(subjects):
@@ -132,28 +146,31 @@ def collect(tag, fetch):
     revisions = f"{previous}..{tag}" if previous else tag
     subjects = git("log", "--first-parent", "--format=%s", revisions).splitlines()
 
-    notes, report = [], []
+    notes, report, maintenance = [], [], False
     for number in pr_numbers(subjects):
         pr = fetch(number)
         branch = pr["head"]["ref"]
         if branch.startswith(EXEMPT_BRANCH_PREFIXES):
-            report.append(f"#{number}: skipped ({branch})")
+            report.append(f"#{number}: maintenance ({branch})")
+            maintenance = True
             continue
         try:
             note = extract_note(pr.get("body"))
         except MissingSection as error:
             # A PR merged before the convention, or with the check ignored. Do
             # not block the release on it: say so, and leave it out.
-            report.append(f"#{number}: no note ({error})")
+            report.append(f"#{number}: maintenance, no note ({error})")
+            maintenance = True
             continue
         if note is None:
-            report.append(f"#{number}: none")
+            report.append(f"#{number}: maintenance (none)")
+            maintenance = True
             continue
         report.append(f"#{number}: {note}")
         notes.append(note)
 
     report.insert(0, f"Release {tag}, PRs since {previous or 'the first commit'}:")
-    return format_notes(notes), report
+    return format_notes(notes, maintenance, tag), report
 
 
 def main(argv):
