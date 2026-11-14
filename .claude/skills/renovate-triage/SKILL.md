@@ -55,22 +55,56 @@ and `allow_auto_merge` is off. GitHub will merge a red PR if asked, so
 
 ## Preflight: what can this session reach?
 
-Run once, before Phase 0. A blocked host is an **environment gap**, not a
-property of any PR, and it reaches the owner as one line naming the host.
+Run once, before Phase 0. It prints nothing but `preflight ok` when every URL
+answers. A URL that does not is an **environment gap**, not a property of any PR.
 
 ```bash
-for h in developer.android.com \
-         docs.gradle.org \
-         raw.githubusercontent.com; do
-  printf '%-34s ' "$h"; curl -sS -m 12 -o /dev/null -w '%{http_code}\n' "https://$h/" 2>&1 | tail -1
+bad=0
+for u in https://developer.android.com/build/releases/gradle-plugin \
+         https://docs.gradle.org/ \
+         https://raw.githubusercontent.com/ \
+         https://api.github.com/; do
+  c=$(curl -sS -m 12 -o /dev/null -w '%{http_code}' "$u" 2>/dev/null) || true
+  case "$c" in 2??|3??|4??) ;; *) echo "UNREACHABLE ($c) $u"; bad=1 ;; esac
 done
+[ "$bad" = 0 ] && echo "preflight ok"
 ```
 
-`000`, or `CONNECT tunnel failed, response 403`, means the egress allow list
-refuses the host; 2xx and 3xx are fine. **curl and WebFetch resolve
-differently** (on 2026-11-14 WebFetch failed with `ENOTFOUND` for a host that curl
-reached), so when WebFetch fails for a host, try curl before calling the notes
-unreachable.
+`UNREACHABLE (000)` means the egress allow list refuses the host, or it is down:
+a timeout looks the same. Any HTTP status, including 403 or 404, means the host
+answered. Probe the path the skill needs, not the site root (a root can fail
+while the path works). **curl and WebFetch resolve differently:** on 2026-11-14
+WebFetch failed with `ENOTFOUND` for `tailscale.com` while curl returned 200, so
+when WebFetch fails for a host, try curl before calling the notes unreachable.
+
+## What counts as new (notifications)
+
+The routine has no memory of earlier runs, so "new" has to come from dates
+GitHub itself keeps. Never use `updated_at`: Renovate rebases, Cloudflare and CI
+bot comments, and PR-body refreshes all move it without anything changing.
+
+- Consider only PRs authored by `renovate[bot]` or `dependabot[bot]`. The owner's
+  and Claude's own PRs are not dependency triage.
+- **New** = `created_at` within the last 36 hours. **Head changed** = the
+  committer date of the PR's last commit (`pull_request_read` `get_commits`)
+  within the last 36 hours. Use 36, not 24, so one late or skipped run does not
+  lose a PR; a PR may then appear twice, which is acceptable.
+- Judge a PR on the run that sees its checks finished. A PR whose checks are
+  still pending is neither held nor new: leave it for the next run.
+- **Parked** = the `blocked-upstream` label, or the owner's newest comment says it
+  is held. A parked PR is news only if its diff grew beyond the dependency's own
+  files, or its checks went from green to red. A Renovate rebase is not news.
+- **Blocker cleared** is news only if the event that cleared it (a release, a
+  merged PR) is dated inside the window. If it cleared earlier, it appears once
+  in the Monday digest as `unblocked: <repo>#<n>`, not daily.
+- **On Mondays (UTC)** add a digest, and leave it out when both lists are empty:
+  `held >7 days:` bot PRs that need the owner and are not parked, aged from
+  `created_at` or the owner's newest comment, whichever is later (ignore bot
+  activity and rebases); and `new this week:` bot PRs created or head-changed in
+  the last 7 days that need the owner, so a lost day costs at most a week.
+- **An environment gap** is notified only when it changed a decision this run (notes
+  unreachable so a PR was held, a smoke step that could not run). Otherwise it
+  appears only in the Monday digest.
 
 ## Phase 0: Inventory
 
@@ -99,8 +133,8 @@ its own PR, labelled `major-update`.
 
 | Bucket | Recognise by | Triage does |
 |---|---|---|
-| **Ask first** | any `major-update` PR (all action majors arrive as one grouped `GitHub Actions (major)` PR); the **JDK (setup-java)** group at any version; **Android Gradle Plugin minor** (9.4 → 9.5); any PR that changes the **version** of `softprops/action-gh-release` or `google-github-actions/auth` (release-only, never exercised by a PR); a Renovate config-migration PR (`renovate.json` edits); any PR touching a file other than the ones listed in Phase 3 | Gather the evidence (Phase 2), then notify. Do not merge |
-| **Candidate LOW RISK** | **Gradle wrapper** minor or patch; **Android Gradle Plugin** patch; **Guava** minor or patch (always `-android`); **Test dependencies** minor or patch (JUnit, Robolectric, androidx.test); **GitHub Actions** `Pin dependencies` and digest refreshes (the version comment stays the same, so behaviour does not change, including for the release-only action); `security` PRs | Apply the rubric |
+| **Ask first** | any `major-update` PR (all action majors arrive as one grouped `GitHub Actions (major)` PR); the **JDK (setup-java)** group at any version; **Android Gradle Plugin minor** (9.4 → 9.5); any PR that changes the **version** of `softprops/action-gh-release` or `google-github-actions/auth` (release-only, never exercised by a PR); a Renovate config-migration PR (`renovate.json` edits); a Gradle wrapper PR that changes `gradle-wrapper.jar` (Phase 3); any PR touching a file other than the ones listed in Phase 3 | Gather the evidence (Phase 2), then notify. Do not merge |
+| **Candidate LOW RISK** | **Gradle wrapper** minor or patch; **Android Gradle Plugin** patch; **Guava** minor or patch (always `-android`); **Test dependencies** minor or patch (JUnit, Robolectric, androidx.test); **GitHub Actions** `Pin dependencies` and digest refreshes (the version comment stays the same, but a floating `@vN` can move to a commit with new behaviour, as #44 did on 2026-11-14: read the commit, not just the comment); `security` PRs | Apply the rubric |
 
 Why AGP minors are Ask first while patches are candidates: a minor can raise
 the minimum Gradle, deprecate DSL the modules use, and ships a new R8 that no
@@ -251,8 +285,7 @@ time; run Phase 4 after each.
 **Notify (one line per item, inside the routine's single notification), only
 when:**
 1. A PR needs the owner: Ask first, or held because its own change broke
-   `build`. Notify on the day it is opened or its head changes (`updated_at`
-   within 24h). A PR that is merely still held stays out of the notification.
+   `build`. Notify on the first run that sees it as needing the owner, or when its head changes (see *What counts as new*). A PR that is merely still held stays out of the notification.
 2. `main` went red after a merge (Phase 4).
 3. A `security`-labelled PR was merged after the newest release tag, so the fix
    reaches no user until the owner tags and sends the Play draft for review. Notify when the merge is
@@ -263,12 +296,7 @@ Everything else is silent: merged LOW RISK PRs, routine holds, "`main` is N
 commits ahead of the release". Message shape:
 `mytime: <action needed> — #<n> <title>: <one-line evidence>`.
 
-**Also notify, and only this:**
-- **On Mondays (UTC), one line** `held >7 days: #<n>, #<n>, ...` for each PR that
-  has waited more than 7 days since its last change, so a parked PR comes back
-  weekly: not daily, and not never.
-- **An environment gap** from the Preflight, one line per blocked host:
-  `environment: <host> blocked, add it to the allow list`.
+See *What counts as new* for the Monday digest and for environment gaps.
 
 ## Known false alarms
 
@@ -295,8 +323,8 @@ tag: `gh api repos/$R/compare/<tag>...main --jq .ahead_by`.
   new version is not `-android` means that rule stopped matching: Ask first.
 - **2026-11-14.** #43 (Robolectric 4.18, which drops SDK 23 while `compileSdk` is
   36) and #44 (a `setup-java` digest refresh whose commit turns the Java problem
-  matcher off by default) merged one at a time, with `Android Build & Test` green
-  on each merge commit. #42 (Gradle wrapper 9.9.1) was held because it changes
-  `gradle-wrapper.jar`, per Phase 3. It had been open since 2026-11-10, so the
-  "opened or changed within 24h" rule meant it was never in a notification; the
-  Monday digest is there for that.
+  matcher off by default, a behaviour change inside the same `@v6`) merged one at
+  a time, with `Android Build & Test` green on each merge commit. #42 (Gradle
+  wrapper 9.9.1) was held because it changes `gradle-wrapper.jar`, per Phase 3.
+  It had been open since 2026-11-10 and sat unannounced because the old rule only
+  notified on the day a PR opened; the Monday digest now covers that.
