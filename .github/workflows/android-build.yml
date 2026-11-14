@@ -44,6 +44,9 @@ jobs:
     - name: Check version numbering
       run: ./scripts/check-version-info.sh
 
+    - name: Test release scripts
+      run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
+
     - name: Generate coverage reports
       run: ./gradlew :mytime:createDebugUnitTestCoverageReport :libraries:timecalc:jacocoTestReport
 

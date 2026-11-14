@@ -5,6 +5,15 @@ on:
     tags:
       - 'v*'  # Trigger on version tags like v1.1.0
 
+# contents: write creates the GitHub Release; pull-requests: read lets
+# play-release-notes.py read each PR's `## Release note`; id-token: write mints
+# the GitHub OIDC token that Workload Identity Federation trades for a
+# short-lived Google Play token (no service-account key exists anywhere).
+permissions:
+  contents: write
+  pull-requests: read
+  id-token: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -47,6 +56,13 @@ jobs:
         UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
         UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
 
+    # Before the GitHub Release, so notes over Play's 500-character limit stop
+    # the run before anything is published.
+    - name: Collect Google Play release notes
+      run: python3 scripts/play-release-notes.py collect "$GITHUB_REF_NAME" > play-notes.txt
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Generate Release Notes
       id: release_notes
       run: |
@@ -72,16 +88,21 @@ jobs:
         TARGET_SDK=$(echo "$VERSION_OUTPUT" | grep "TARGET_SDK=" | sed 's/TARGET_SDK=//')
         MIN_SDK=$(echo "$VERSION_OUTPUT" | grep "MIN_SDK=" | sed 's/MIN_SDK=//')
         JAVA_VERSION=$(echo "$VERSION_OUTPUT" | grep "JAVA_VERSION=" | sed 's/JAVA_VERSION=//')
+        echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+        PLAY_NOTES=$(cat play-notes.txt)
 
         # Create release body
         cat << EOF > release_notes.md
         ## Release ${{ github.ref_name }}
 
-        ### What's New
+        ### Google Play "What's new"
+        $PLAY_NOTES
+
+        ### Changes
         $CHANGELOG
 
         ### Installation
-        Download the App Bundle (.aab) and upload to Google Play Console for distribution.
+        Once Google Play publishing is set up (README), the App Bundle (.aab) below is also uploaded to the Play production track as a draft: send it for review in the Play Console.
 
         ### Build Info
         - Version: $VERSION_NAME ($VERSION_CODE)
@@ -104,3 +125,48 @@ jobs:
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # Set up once (see README "Google Play publishing"): until both variables
+    # exist the upload is skipped, so tagging keeps working, but loudly.
+    - name: Check Google Play configuration
+      id: play
+      env:
+        PLAY_WIF_PROVIDER: ${{ vars.PLAY_WIF_PROVIDER }}
+        PLAY_SERVICE_ACCOUNT: ${{ vars.PLAY_SERVICE_ACCOUNT }}
+      run: |
+        if [ -n "$PLAY_WIF_PROVIDER" ] && [ -n "$PLAY_SERVICE_ACCOUNT" ]; then
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "::warning::PLAY_WIF_PROVIDER / PLAY_SERVICE_ACCOUNT are not set: the bundle was NOT uploaded to Google Play. Upload the .aab from the GitHub Release by hand."
+          echo "enabled=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Authenticate to Google Play
+      if: steps.play.outputs.enabled == 'true'
+      id: gcp
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+      with:
+        workload_identity_provider: ${{ vars.PLAY_WIF_PROVIDER }}
+        service_account: ${{ vars.PLAY_SERVICE_ACCOUNT }}
+        token_format: access_token
+        access_token_scopes: https://www.googleapis.com/auth/androidpublisher
+        create_credentials_file: false
+
+    - name: Upload to Google Play (production, draft)
+      if: steps.play.outputs.enabled == 'true'
+      env:
+        PLAY_ACCESS_TOKEN: ${{ steps.gcp.outputs.access_token }}
+        VERSION_NAME: ${{ steps.release_notes.outputs.version_name }}
+        PLAY_NOTES_LANGUAGE: ${{ vars.PLAY_NOTES_LANGUAGE || 'en-US' }}
+      run: |
+        set -- mytime/build/outputs/bundle/release/mytime-*.aab
+        [ "$#" -eq 1 ] && [ -f "$1" ] || { echo "::error::expected exactly one bundle, found: $*"; exit 1; }
+        python3 scripts/play-publish.py \
+          --package com.harringa.mytime \
+          --aab "$1" \
+          --mapping mytime/build/outputs/mapping/release/mapping.txt \
+          --version-name "$VERSION_NAME" \
+          --notes-file play-notes.txt \
+          --language "$PLAY_NOTES_LANGUAGE" \
+          --track production \
+          --status draft

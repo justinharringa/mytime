@@ -67,9 +67,16 @@ This project uses trunk-based development with comprehensive GitHub Actions work
 **Triggers:** Push tags matching `v*` (e.g., `v1.1.0`)
 
 - Builds the signed release App Bundle (AAB)
-- Creates GitHub release with release notes
-- Uploads the AAB to release assets
+- Collects the Google Play "What's new" text from the `## Release note` section of each PR merged since the previous tag (`scripts/play-release-notes.py`)
+- Creates the GitHub release with those notes plus the commit list, and attaches the AAB
+- Uploads the AAB, its R8 mapping and the notes to the Google Play **production track as a draft** (`scripts/play-publish.py`)
 - Only runs when you push a version tag
+
+### 📝 **Release Note Check** (`release-note.yml`)
+
+**Triggers:** Pull Requests (opened, edited, synchronized), except Renovate's
+
+- Fails a PR whose body has no `## Release note` section (`.github/pull_request_template.md`). The section holds one user-facing sentence, or `none`, and becomes the Play "What's new" text unedited. `CLAUDE.md` says what makes a good one.
 
 ### 🔐 **Signing Configuration**
 
@@ -96,10 +103,23 @@ To set up Play App Signing:
 
 2. **GitHub Actions automatically**:
    - Builds the signed release App Bundle (AAB)
-   - Creates GitHub release
-   - Uploads the AAB to release assets
+   - Creates the GitHub release, with the AAB attached
+   - Uploads the AAB and the release notes to Google Play as a draft production release
 
-3. **Upload the AAB** to Google Play Console.
+3. **Send it for review** in the Play Console (Publishing overview, or Production → the draft release). You can still edit the notes there first.
+
+If a PR's note needs fixing after it merged, edit that PR's description before tagging; the notes are read from the PR bodies at tag time. A release whose PRs all say `none` (e.g. dependency bumps only) gets a generic "Maintenance update" line.
+
+### 🤖 **Google Play publishing (one-time setup)**
+
+`release.yml` authenticates keylessly: GitHub's OIDC token is exchanged through GCP Workload Identity Federation for a short-lived token of the `play-publisher` service account. No JSON key exists. The GCP side lives in the knuckles repo (`infrastructure/terraform/gcp/play_publisher.tf`), which only accepts tokens from this repository's `release.yml` running on a `v*` tag.
+
+1. Apply the knuckles GCP stack, and note its `play_publisher_wif_provider_name` and `play_publisher_sa_email` outputs.
+2. In the Play Console: **Users and permissions → Invite new users**, enter the service account's email, and under **App permissions** add My Time with **Release to production, exclude devices, and use Play App Signing** and **Release apps to testing tracks**.
+3. In this repository's **Settings → Secrets and variables → Actions → Variables**, set `PLAY_WIF_PROVIDER` and `PLAY_SERVICE_ACCOUNT` to those two outputs. They are identifiers, not secrets.
+4. Optional: set `PLAY_NOTES_LANGUAGE` if the store listing's default language is not `en-US`.
+
+Until both variables are set, the upload step is skipped with a warning and the AAB is only on the GitHub release.
 
 ### 📋 **Workflow Triggers**
 

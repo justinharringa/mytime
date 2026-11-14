@@ -1,6 +1,6 @@
 ---
 name: renovate-triage
-description: Triage mytime's open Renovate PRs from evidence, not titles. Classify each PR by posture, read the upstream notes (AGP and androidx publish theirs on developer.android.com, not GitHub), require the `build` check green on the current head (nothing on GitHub enforces it: `main` has no ruleset), merge what passes the LOW RISK rubric one PR at a time, and verify each merge commit's run on `main`. Merging deploys nothing; a release is a tag push plus a manual Play Console upload, both the owner's. Works unattended from a cloud session (GitHub connector or `gh api`). Use when asked to triage, review or clear mytime's Renovate PRs or its Dependency Dashboard, or when the Daily Renovate Triage routine reaches this repo.
+description: Triage mytime's open Renovate PRs from evidence, not titles. Classify each PR by posture, read the upstream notes (AGP and androidx publish theirs on developer.android.com, not GitHub), require the `build` check green on the current head (nothing on GitHub enforces it: `main` has no ruleset), merge what passes the LOW RISK rubric one PR at a time, and verify each merge commit's run on `main`. Merging deploys nothing; a release is a tag push (which uploads a draft to Play) plus sending that draft for review, both the owner's. Works unattended from a cloud session (GitHub connector or `gh api`). Use when asked to triage, review or clear mytime's Renovate PRs or its Dependency Dashboard, or when the Daily Renovate Triage routine reaches this repo.
 ---
 
 # Renovate Triage: mytime
@@ -16,11 +16,12 @@ merge changes `main` and nothing else.
 ```
 PR merged to main ──(nothing ships)──▶ owner pushes tag vX.Y.Z
    ──▶ release.yml builds the signed, R8-minified App Bundle ──▶ GitHub Release
-   ──▶ owner uploads the .aab to the Play Console by hand ──▶ users
+   ──▶ release.yml uploads it to Play production as a DRAFT
+   ──▶ owner sends the draft for review in the Play Console ──▶ users
 ```
 
 - **Merging is not a deploy.** No user sees a merged bump until the owner tags
-  and uploads. Keep `main` releasable all the same: a bad merge waits there for
+  and sends the Play draft for review. Keep `main` releasable all the same: a bad merge waits there for
   whoever cuts the next release.
 - **Never push a tag or dispatch a workflow from triage.** Releasing is the
   owner's decision, and `release.yml` signs with the upload key.
@@ -31,6 +32,7 @@ PR merged to main ──(nothing ships)──▶ owner pushes tag vX.Y.Z
 |---|---|---|
 | `build` (Android Build & Test) | every PR and every push to `main` | `./gradlew build -x assembleRelease`, unit tests (Robolectric for `:mytime`, plain JUnit for `timecalc`), `scripts/check-version-info.sh`, JaCoCo reports, `assembleDebug`, `lint`. About 2 minutes |
 | `renovate.json (config validator)` (Renovate Config Validation) | PRs and pushes that touch `renovate.json` | `renovate-config-validator --strict` |
+| `release-note` (Release Note) | PRs, **skipped on `renovate/*` branches** | The PR body has a `## Release note` section. Skipped on every Renovate PR by design; a skip is not a failure |
 
 **Nothing enforces these.** `main` has no ruleset and no classic protection,
 and `allow_auto_merge` is off. GitHub will merge a red PR if asked, so
@@ -44,8 +46,12 @@ and `allow_auto_merge` is off. GitHub will merge a red PR if asked, so
   bump can change what R8 keeps. A failure surfaces at the next release, in
   front of the owner, or at runtime in a minified build.
 - **Signing.** Only `release.yml` decodes the upload keystore.
-- **`softprops/action-gh-release`.** It appears only in `release.yml`, which has
-  no `pull_request` trigger.
+- **`softprops/action-gh-release` and `google-github-actions/auth`.** Both
+  appear only in `release.yml`, which has no `pull_request` trigger. `auth`
+  mints the Play upload token, so a broken bump surfaces as a failed Play
+  upload at the next tag.
+- **The Play upload** (`scripts/play-publish.py`). Its unit tests run in
+  `build` against a fake API; the real API is first called at the next tag.
 
 ## Phase 0: Inventory
 
@@ -74,7 +80,7 @@ its own PR, labelled `major-update`.
 
 | Bucket | Recognise by | Triage does |
 |---|---|---|
-| **Ask first** | any `major-update` PR (all action majors arrive as one grouped `GitHub Actions (major)` PR); the **JDK (setup-java)** group at any version; **Android Gradle Plugin minor** (9.4 → 9.5); any PR that changes the **version** of `softprops/action-gh-release` (release-only, never exercised by a PR); a Renovate config-migration PR (`renovate.json` edits); any PR touching a file other than the ones listed in Phase 3 | Gather the evidence (Phase 2), then notify. Do not merge |
+| **Ask first** | any `major-update` PR (all action majors arrive as one grouped `GitHub Actions (major)` PR); the **JDK (setup-java)** group at any version; **Android Gradle Plugin minor** (9.4 → 9.5); any PR that changes the **version** of `softprops/action-gh-release` or `google-github-actions/auth` (release-only, never exercised by a PR); a Renovate config-migration PR (`renovate.json` edits); any PR touching a file other than the ones listed in Phase 3 | Gather the evidence (Phase 2), then notify. Do not merge |
 | **Candidate LOW RISK** | **Gradle wrapper** minor or patch; **Android Gradle Plugin** patch; **Guava** minor or patch (always `-android`); **Test dependencies** minor or patch (JUnit, Robolectric, androidx.test); **GitHub Actions** `Pin dependencies` and digest refreshes (the version comment stays the same, so behaviour does not change, including for the release-only action); `security` PRs | Apply the rubric |
 
 Why AGP minors are Ask first while patches are candidates: a minor can raise
@@ -230,7 +236,7 @@ when:**
    within 24h). A PR that is merely still held stays out of the notification.
 2. `main` went red after a merge (Phase 4).
 3. A `security`-labelled PR was merged after the newest release tag, so the fix
-   reaches no user until the owner tags and uploads. Notify when the merge is
+   reaches no user until the owner tags and sends the Play draft for review. Notify when the merge is
    under 24h old, and again if it is still unreleased 7 days later.
 4. A Dependabot PR appeared (see Phase 0).
 

@@ -1,0 +1,32 @@
+name: Release Note
+
+# Every PR body needs a `## Release note` section (see
+# .github/pull_request_template.md): it becomes the Google Play "What's new"
+# text at the next tag, unedited. Catch a missing one here, while the author is
+# still looking at the PR, instead of at release time.
+#
+# `edited` re-runs the check when the PR description changes. The body is
+# passed through env, never interpolated into the script, because anyone who
+# can open a PR writes it.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  release-note:
+    name: release-note
+    # Renovate's bumps are never user-facing and its bodies don't use the template.
+    if: ${{ !startsWith(github.head_ref, 'renovate/') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Check the PR's release note
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: python3 scripts/play-release-notes.py check
