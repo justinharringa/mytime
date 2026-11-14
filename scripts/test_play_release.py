@@ -3,8 +3,10 @@
 Run from the repo root: python3 -m unittest discover -s scripts -p 'test_*.py'
 """
 
+import contextlib
 import http.server
 import importlib.util
+import io
 import json
 import os
 import tempfile
@@ -277,6 +279,26 @@ class Publish(unittest.TestCase):
         methods = [(method, path.rsplit("/", 1)[-1]) for method, path, _, _ in FakePlay.calls]
         self.assertEqual(methods[-1], ("DELETE", "E1"))
         self.assertNotIn("E1:commit", [p for _, p in methods])
+
+    def test_missing_mapping_is_an_annotation_and_deletes_the_edit(self):
+        argv = list(self.argv)
+        argv[argv.index("--mapping") + 1] += ".gone"
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            self.assertEqual(self.publish.main(argv), 1)
+        self.assertIn("::error::Google Play upload failed: FileNotFoundError", stderr.getvalue())
+        methods = [(method, path.rsplit("/", 1)[-1]) for method, path, _, _ in FakePlay.calls]
+        self.assertEqual(methods[-1], ("DELETE", "E1"))
+        self.assertNotIn("E1:commit", [p for _, p in methods])
+
+    def test_missing_notes_file_is_an_annotation_before_any_call(self):
+        argv = list(self.argv)
+        argv[argv.index("--notes-file") + 1] += ".gone"
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            self.assertEqual(self.publish.main(argv), 1)
+        self.assertIn("::error::Google Play upload failed: FileNotFoundError", stderr.getvalue())
+        self.assertEqual(FakePlay.calls, [])
 
     def test_missing_token(self):
         del os.environ["PLAY_ACCESS_TOKEN"]

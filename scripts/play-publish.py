@@ -115,13 +115,18 @@ def main(argv):
     if not token:
         print("::error::PLAY_ACCESS_TOKEN is not set", file=sys.stderr)
         return 1
-    with open(args.notes_file, encoding="utf-8") as notes_file:
-        notes = notes_file.read().strip()
-
     try:
+        with open(args.notes_file, encoding="utf-8") as notes_file:
+            notes = notes_file.read().strip()
         publish(Play(args.package, token), args, notes)
     except PlayError as error:
         print(f"::error::Google Play: {error}", file=sys.stderr)
+        return 1
+    # The failures to expect: a missing bundle, mapping or notes file, or the
+    # network (URLError and timeouts are OSErrors), or a response not shaped
+    # as documented. Anything else is a bug here and keeps its traceback.
+    except (OSError, ValueError, KeyError) as error:
+        print(f"::error::Google Play upload failed: {type(error).__name__}: {error}", file=sys.stderr)
         return 1
     return 0
 
