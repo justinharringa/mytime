@@ -95,7 +95,7 @@ To set up Play App Signing:
 
 ### 📋 **Release Process**
 
-1. **Create and push a version tag.** The version name and code come from the tag; see [VERSIONING.md](VERSIONING.md):
+1. **Create and push a version tag (owner only: a tag push builds the signed bundle and uploads it to Play as a draft; agents and scheduled sessions never do this).** The version name and code come from the tag; see [VERSIONING.md](VERSIONING.md):
    ```bash
    git tag v1.1.1
    git push origin v1.1.1
