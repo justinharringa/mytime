@@ -87,8 +87,10 @@ jobs:
           -dname "CN=ci-throwaway" -storepass ci-throwaway -keypass ci-throwaway
         # A passing build can still carry a JDK warning from AGP (it warned about
         # JDK 25 in generateReleaseRFile before 9.5.0-alpha08), so fail on one.
+        # --rerun-tasks: a task restored from the build cache prints no warning, and
+        # the cache key does not include the JDK.
         set -o pipefail
-        ./gradlew :mytime:bundleRelease 2>&1 | tee "$RUNNER_TEMP/release-bundle.log"
+        ./gradlew :mytime:bundleRelease --rerun-tasks 2>&1 | tee "$RUNNER_TEMP/release-bundle.log"
         if grep -n -i -E 'warning.*\b(jdk|java)\b' "$RUNNER_TEMP/release-bundle.log"; then
           echo "::error::The release build printed a JDK or Java warning (lines above)."
           exit 1
