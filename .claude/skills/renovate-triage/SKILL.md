@@ -30,7 +30,7 @@ PR merged to main ──(nothing ships)──▶ owner pushes tag vX.Y.Z
 
 | Check (workflow) | Runs on | Covers |
 |---|---|---|
-| `build` (Android Build & Test) | every PR and every push to `main` | `./gradlew build -x assembleRelease`, unit tests (Robolectric for `:mytime`, plain JUnit for `timecalc`), `scripts/check-version-info.sh`, JaCoCo reports, `assembleDebug`, `lint`. About 2 minutes |
+| `build` (Android Build & Test) | every PR and every push to `main` | `./gradlew build -x assembleRelease`, unit tests (Robolectric for `:mytime`, plain JUnit for `timecalc`), `scripts/check-version-info.sh`, JaCoCo reports, `assembleDebug`, `lint`, then (since #47, 2026-11-15) `:mytime:bundleRelease` with a throwaway key and `--rerun-tasks`, failing on a JDK or Java warning in its log. About 2 minutes |
 | `renovate.json (config validator)` (Renovate Config Validation) | PRs and pushes that touch `renovate.json` | `renovate-config-validator --strict` |
 | `release-note` (Release Note) | PRs, **skipped on `renovate/*` branches** | Previews the PR's Google Play note. Skipped on every Renovate PR by design (Renovate PRs are always behind-the-scenes); a skip is not a failure |
 
@@ -39,13 +39,15 @@ and `allow_auto_merge` is off. GitHub will merge a red PR if asked, so
 **triage checks `build` itself.**
 
 **Not covered by any pre-merge check:**
-- **The release build.** `-x assembleRelease` skips it, so R8 minification and
-  resource shrinking (`minifyEnabled`, `shrinkResources` in
-  `mytime/build.gradle`) first run on the next tag. R8 ships inside AGP, so
-  **every AGP bump changes the shrinker without a pre-merge test**, and a Guava
-  bump can change what R8 keeps. A failure surfaces at the next release, in
-  front of the owner, or at runtime in a minified build.
-- **Signing.** Only `release.yml` decodes the upload keystore.
+- **The release build's behaviour at runtime.** Since #47 (2026-11-15) `build`
+  produces the release bundle, so R8 and resource shrinking
+  (`minifyEnabled`, `shrinkResources` in `mytime/build.gradle`) now run on every
+  PR, and a failure shows before merge. What the step cannot show is whether a
+  *minified* app still behaves: R8 can strip a class that only reflection
+  reaches, and no test runs the minified build. An AGP bump or a Guava bump can
+  still change what R8 keeps.
+- **The real signing key.** The release step signs with a throwaway key made in
+  the job. Only `release.yml` decodes the upload keystore.
 - **`softprops/action-gh-release` and `google-github-actions/auth`.** Both
   appear only in `release.yml`, which has no `pull_request` trigger. `auth`
   mints the Play upload token, so a broken bump surfaces as a failed Play
@@ -151,7 +153,8 @@ its own PR, labelled `major-update`.
 
 Why AGP minors are Ask first while patches are candidates: a minor can raise
 the minimum Gradle, deprecate DSL the modules use, and ships a new R8 that no
-PR check exercises. A patch keeps all three.
+PR check exercises on its own. A patch keeps all three. (Since #47 the release
+bundle is built on every PR, so a new R8 now at least has to build.)
 
 The first wave, opened 2026-11-09 within minutes of `renovate.json` landing,
 classifies as:
@@ -202,6 +205,12 @@ Renovate (`rebaseWhen: auto` rebases a conflicted PR).
    - **AGP**: the minimum Gradle (compare with
      `gradle/wrapper/gradle-wrapper.properties`), the minimum JDK (CI and
      `build.gradle` require 21), R8 or shrinker changes, and DSL removals.
+     For a **JDK bump**, also read the AGP row for the pinned version on
+     https://developer.android.com/build/releases/gradle-plugin and the AGP
+     issue list for the target JDK (AGP warned about JDK 25 in
+     `generateReleaseRFile` until 9.5.0-alpha08). A green `build` shows the
+     build works on that JDK, not that AGP supports it. If neither page names
+     the JDK, say so in the notification rather than calling it supported.
    - **Robolectric**: the supported SDK levels. `compileSdk` in
      `mytime/build.gradle` must be in the set, or every Robolectric test fails
      to boot the framework (the `build` check catches this, so read it to
@@ -272,9 +281,11 @@ In a routine: `actions_list` method `list_workflow_runs`. Match the run's
 A red run after a merge means stop merging and notify with the run ID. Do not
 fix forward from triage.
 
-**What Phase 4 cannot verify:** the release build (R8, shrinking, signing). For
-an AGP or Guava merge, the report says so, and the owner's next release is the
-first real test. That is a known gap, not a reason to hold every AGP patch.
+**What Phase 4 cannot verify:** that the minified app behaves (R8, shrinking)
+and the real signing key and Play upload. The release bundle itself is built on
+every PR and on the merge commit (#47). For an AGP or Guava merge, the report
+says so, and the owner's next release is the first real test of the minified
+app. That is a known gap, not a reason to hold every AGP patch.
 
 ## Unattended (routine) mode
 
@@ -320,8 +331,8 @@ See *What counts as new* for the Monday digest and for environment gaps.
 ## Report
 
 For each PR: number, title, bucket, decision (merged / held / ask), and one or
-two lines of evidence. For merges, the Phase 4 run ID, plus "release build not
-verified" for AGP and Guava. Finish with how far `main` is ahead of the newest
+two lines of evidence. For merges, the Phase 4 run ID, plus "minified app not
+exercised" for AGP and Guava. Finish with how far `main` is ahead of the newest
 tag: `gh api repos/$R/compare/<tag>...main --jq .ahead_by`.
 
 ## Known characteristics
