@@ -76,3 +76,17 @@ jobs:
         
     - name: Run lint checks
       run: ./gradlew lint
+
+    # The build above skips assembleRelease, so R8 and resource shrinking would
+    # first run at a tag. Build the release bundle here with a throwaway key
+    # (pull requests get no secrets, and nothing built here is uploaded).
+    - name: Build release App Bundle (throwaway key)
+      run: |
+        keytool -genkeypair -keystore "$RUNNER_TEMP/ci-throwaway.jks" -storetype PKCS12 \
+          -alias ci -keyalg RSA -keysize 2048 -validity 1 \
+          -dname "CN=ci-throwaway" -storepass ci-throwaway -keypass ci-throwaway
+        ./gradlew :mytime:bundleRelease
+      env:
+        UPLOAD_KEYSTORE: ${{ runner.temp }}/ci-throwaway.jks
+        UPLOAD_KEY_ALIAS: ci
+        UPLOAD_KEY_PASSWORD: ci-throwaway
