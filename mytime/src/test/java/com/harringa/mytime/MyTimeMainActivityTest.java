@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import android.widget.Button;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TimePicker;
@@ -42,6 +43,19 @@ public class MyTimeMainActivityTest {
     public void saveAnEarlierCheckIn() {
         provider = CheckInContentProvider.getInstance(ApplicationProvider.getApplicationContext());
         assertTrue(provider.saveCheckIn(EARLIER_CHECK_IN));
+    }
+
+    // TalkBack and Voice Access use the visible label: a contentDescription would replace it,
+    // and "tap Check In" only works when the spoken name contains the text on the button
+    @Test
+    public void checkInButtonIsAnnouncedByItsVisibleLabel() {
+        try (ActivityScenario<MyTimeMainActivity> scenario = ActivityScenario.launch(MyTimeMainActivity.class)) {
+            scenario.onActivity(activity -> {
+                Button checkIn = activity.findViewById(R.id.checkIn);
+                assertNull(checkIn.getContentDescription());
+                assertEquals(activity.getString(R.string.checkInButton), checkIn.getText().toString());
+            });
+        }
     }
 
     @Test
