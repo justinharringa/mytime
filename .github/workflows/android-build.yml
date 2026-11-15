@@ -76,3 +76,24 @@ jobs:
         
     - name: Run lint checks
       run: ./gradlew lint
+
+    # The build above skips assembleRelease, so R8 and resource shrinking would
+    # first run at a tag. Build the release bundle here with a throwaway key
+    # (pull requests get no secrets, and nothing built here is uploaded).
+    - name: Build release App Bundle (throwaway key)
+      run: |
+        keytool -genkeypair -keystore "$RUNNER_TEMP/ci-throwaway.jks" -storetype PKCS12 \
+          -alias ci -keyalg RSA -keysize 2048 -validity 1 \
+          -dname "CN=ci-throwaway" -storepass ci-throwaway -keypass ci-throwaway
+        # A passing build can still carry a JDK warning from AGP (it warned about
+        # JDK 25 in generateReleaseRFile before 9.5.0-alpha08), so fail on one.
+        set -o pipefail
+        ./gradlew :mytime:bundleRelease 2>&1 | tee "$RUNNER_TEMP/release-bundle.log"
+        if grep -n -i -E 'warning.*\b(jdk|java)\b' "$RUNNER_TEMP/release-bundle.log"; then
+          echo "::error::The release build printed a JDK or Java warning (lines above)."
+          exit 1
+        fi
+      env:
+        UPLOAD_KEYSTORE: ${{ runner.temp }}/ci-throwaway.jks
+        UPLOAD_KEY_ALIAS: ci
+        UPLOAD_KEY_PASSWORD: ci-throwaway
