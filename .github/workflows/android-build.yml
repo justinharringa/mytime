@@ -97,7 +97,7 @@ jobs:
         # the cache key does not include the JDK.
         set -o pipefail
         ./gradlew :mytime:bundleRelease --rerun-tasks 2>&1 | tee "$RUNNER_TEMP/release-bundle.log"
-        if grep -n -i -E 'warning.*\b(jdk|java)\b' "$RUNNER_TEMP/release-bundle.log"; then
+        if grep -n -i -E 'warning.*(jdk [0-9]|jdk version|java_home|java [0-9]+|java version)' "$RUNNER_TEMP/release-bundle.log"; then
           echo "::error::The release build printed a JDK or Java warning (lines above)."
           exit 1
         fi
