@@ -30,7 +30,7 @@ PR merged to main ──(nothing ships)──▶ owner pushes tag vX.Y.Z
 
 | Check (workflow) | Runs on | Covers |
 |---|---|---|
-| `build` (Android Build & Test) | every PR and every push to `main` | `./gradlew build -x assembleRelease`, unit tests (Robolectric for `:mytime`, plain JUnit for `timecalc`), `scripts/check-version-info.sh`, JaCoCo reports, `assembleDebug`, `lint`, then (since #47, 2026-11-15) `:mytime:bundleRelease` with a throwaway key and `--rerun-tasks`, failing on a JDK or Java warning in its log. About 2 minutes |
+| `build` (Android Build & Test) | every PR and every push to `main` | `./gradlew build -x assembleRelease`, unit tests (Robolectric for `:mytime`, plain JUnit for `timecalc`), `scripts/check-version-info.sh`, JaCoCo reports, `assembleDebug`, `lint`, then (since #47, 2026-11-15) `:mytime:bundleRelease` with a throwaway key and `--rerun-tasks`, failing on a JDK or Java warning in its log (a heuristic grep: it can miss a warning worded without those phrases). About 2 minutes before the release step; the release step reruns every task, so allow a little longer |
 | `renovate.json (config validator)` (Renovate Config Validation) | PRs and pushes that touch `renovate.json` | `renovate-config-validator --strict` |
 | `release-note` (Release Note) | PRs, **skipped on `renovate/*` branches** | Previews the PR's Google Play note. Skipped on every Renovate PR by design (Renovate PRs are always behind-the-scenes); a skip is not a failure |
 
@@ -152,9 +152,9 @@ its own PR, labelled `major-update`.
 | **Candidate LOW RISK** | **Gradle wrapper** minor or patch; **Android Gradle Plugin** patch; **Guava** minor or patch (always `-android`); **Test dependencies** minor or patch (JUnit, Robolectric, androidx.test); **GitHub Actions** `Pin dependencies` and digest refreshes (the version comment stays the same, but a floating `@vN` can move to a commit with new behaviour, as #44 did on 2026-11-14: read the commit, not just the comment); `security` PRs | Apply the rubric |
 
 Why AGP minors are Ask first while patches are candidates: a minor can raise
-the minimum Gradle, deprecate DSL the modules use, and ships a new R8 that no
-PR check exercises on its own. A patch keeps all three. (Since #47 the release
-bundle is built on every PR, so a new R8 now at least has to build.)
+the minimum Gradle, deprecate DSL the modules use, and ships a new R8 whose keep
+behaviour no test exercises. A patch keeps all three. (Since #47 the release
+bundle is built on every PR, so a new R8 at least has to build.)
 
 The first wave, opened 2026-11-09 within minutes of `renovate.json` landing,
 classifies as:
