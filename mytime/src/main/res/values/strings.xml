@@ -12,9 +12,19 @@
     <string name="duplicateCheckInMessage">Already checked in at %1$s</string>
     <string name="checkInListDescription">List of check-in times grouped by date</string>
     <string name="timePickerDescription">Select check-in time</string>
-    <string name="checkInButtonDescription">Save check-in at selected time</string>
-    <string name="checkInDateDescription">Check-in date</string>
-    <string name="dateTotalDescription">Total hours worked</string>
-    <string name="checkInTimesDescription">Check-in times for this date</string>
+
+    <!-- What TalkBack reads for one day in the list. ^1 is the date, ^2 the total, ^3 the
+         check-in times. TextUtils.expandTemplate fills these in and keeps each time's TtsSpan. -->
+    <string name="dayDescription">^1. Total ^2. Times: ^3</string>
+    <string name="dayMissingCheckInDescription">^1. Missing check in. Times: ^2</string>
+    <string name="durationHoursAndMinutes">^1 ^2</string>
+    <plurals name="durationHours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <plurals name="durationMinutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
 
 </resources>

@@ -1,9 +1,12 @@
 package com.harringa.mytime.view;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.text.Spanned;
+import android.text.style.TtsSpan;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -79,6 +82,57 @@ public class CheckInAdapterTest {
 
         assertEquals(context.getString(R.string.missingCheckInText), text(row, R.id.dateTotal));
         assertEquals(Color.RED, textColor(row, R.id.dateTotal));
+    }
+
+    @Test
+    public void talkBackReadsTheDayAsOneSpelledOutSentence() {
+        View row = row(adapterFor(PAST_DAY.atTime(17, 30), PAST_DAY.atTime(9, 0)), 0);
+
+        assertEquals("Monday, January 5, 2026. Total 8 hours 30 minutes. Times: 09:00, 17:30",
+                row.getContentDescription().toString());
+        for (int id : new int[] {R.id.checkInDate, R.id.dateTotal, R.id.checkInTimes}) {
+            assertEquals(View.IMPORTANT_FOR_ACCESSIBILITY_NO, row.findViewById(id).getImportantForAccessibility());
+        }
+    }
+
+    @Test
+    public void eachTimeIsMarkedAsATimeOfDayForTextToSpeech() {
+        View row = row(adapterFor(PAST_DAY.atTime(9, 5), PAST_DAY.atTime(17, 30)), 0);
+        Spanned description = (Spanned) row.getContentDescription();
+
+        TtsSpan[] spans = description.getSpans(0, description.length(), TtsSpan.class);
+        assertEquals(2, spans.length);
+        assertArrayEquals(new String[] {"09:05", "17:30"}, new String[] {spanned(description, spans[0]), spanned(description, spans[1])});
+        assertEquals(TtsSpan.TYPE_TIME, spans[0].getType());
+        assertEquals(9, spans[0].getArgs().getInt(TtsSpan.ARG_HOURS));
+        assertEquals(5, spans[0].getArgs().getInt(TtsSpan.ARG_MINUTES));
+        assertEquals(17, spans[1].getArgs().getInt(TtsSpan.ARG_HOURS));
+        assertEquals(30, spans[1].getArgs().getInt(TtsSpan.ARG_MINUTES));
+    }
+
+    @Test
+    public void talkBackSaysAPastDayIsMissingACheckIn() {
+        View row = row(adapterFor(PAST_DAY.atTime(9, 0), PAST_DAY.atTime(12, 0), PAST_DAY.atTime(13, 0)), 0);
+
+        assertEquals("Monday, January 5, 2026. Missing check in. Times: 09:00, 12:00, 13:00",
+                row.getContentDescription().toString());
+    }
+
+    @Test
+    public void spokenTotalUsesWordsAndDropsAZeroPart() {
+        assertEquals("Total 8 hours.", spokenTotal(PAST_DAY.atTime(9, 0), PAST_DAY.atTime(17, 0)));
+        assertEquals("Total 45 minutes.", spokenTotal(PAST_DAY.atTime(9, 0), PAST_DAY.atTime(9, 45)));
+        assertEquals("Total 1 hour 1 minute.", spokenTotal(PAST_DAY.atTime(9, 0), PAST_DAY.atTime(10, 1)));
+        assertEquals("Total 0 minutes.", spokenTotal(PAST_DAY.atTime(9, 0), PAST_DAY.atTime(9, 0, 30)));
+    }
+
+    private String spokenTotal(LocalDateTime in, LocalDateTime out) {
+        String description = row(adapterFor(in, out), 0).getContentDescription().toString();
+        return description.substring(description.indexOf("Total"), description.indexOf(" Times:"));
+    }
+
+    private static String spanned(Spanned text, Object span) {
+        return text.subSequence(text.getSpanStart(span), text.getSpanEnd(span)).toString();
     }
 
     private CheckInAdapter adapterFor(LocalDateTime... checkIns) {
